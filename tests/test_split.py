@@ -198,6 +198,6 @@ class TestSplitCLI:
         for fname in ("train.parquet", "cal.parquet", "test.parquet"):
             split_df = pd.read_parquet(processed / fname)
             split_rate = split_df["is_canceled"].mean()
-            assert split_rate == pytest.approx(pos_rate, abs=0.05), (
-                f"{fname}: positive_rate={split_rate:.3f} expected≈{pos_rate}"
-            )
+            assert split_rate == pytest.approx(
+                pos_rate, abs=0.05
+            ), f"{fname}: positive_rate={split_rate:.3f} expected≈{pos_rate}"
