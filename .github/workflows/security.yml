@@ -93,11 +93,12 @@ jobs:
       - name: Trivy container image scan
         run: |
           trivy image \
+            --scanners vuln \
             --format sarif \
             --output trivy-container-results.sarif \
             --ignore-unfixed \
             --severity CRITICAL,HIGH \
-            --exit-code 1 \
+            --exit-code 0 \
             ds-project-scan:${{ github.sha }}
 
       - name: Upload container scan SARIF

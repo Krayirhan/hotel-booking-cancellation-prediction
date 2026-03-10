@@ -273,3 +273,34 @@ def error_response(
             "request_id": request_id,
         },
     )
+
+
+# ─── Shared app-ref (eliminates _app_ref duplication in api_v1/api_v2) ──────
+_shared_app_ref = None
+
+
+def set_shared_app_ref(app) -> None:
+    """Call once at startup (from api.py) to register the FastAPI app instance."""
+    global _shared_app_ref
+    _shared_app_ref = app
+
+
+def get_shared_app_ref():
+    """Return the registered FastAPI app instance (may be None before startup)."""
+    return _shared_app_ref
+
+
+def get_serving_state_for_router() -> ServingState:
+    """Shared helper used by api_v1 and api_v2 routers.
+
+    Reads serving state from app.state if available, otherwise loads from disk
+    and caches it on app.state for subsequent calls.
+    """
+    if _shared_app_ref is not None:
+        serving = getattr(_shared_app_ref.state, "serving", None)
+        if serving is not None:
+            return serving
+    serving = load_serving_state()
+    if _shared_app_ref is not None:
+        _shared_app_ref.state.serving = serving
+    return serving

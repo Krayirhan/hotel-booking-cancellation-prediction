@@ -194,8 +194,9 @@ app.add_middleware(
 )
 
 # ── Register versioned routers ────────────────────────────────────────
-from .api_v1 import router_v1, _set_app_ref as _v1_set_app  # noqa: E402
-from .api_v2 import router_v2, _set_app_ref as _v2_set_app  # noqa: E402
+from .api_v1 import router_v1  # noqa: E402
+from .api_v2 import router_v2  # noqa: E402
+from .api_shared import set_shared_app_ref  # noqa: E402
 
 app.include_router(router_v1)
 app.include_router(router_v2)
@@ -203,8 +204,7 @@ app.include_router(router_dashboard)
 app.include_router(router_dashboard_auth)
 app.include_router(router_chat)
 app.include_router(router_guests)
-_v1_set_app(app)
-_v2_set_app(app)
+set_shared_app_ref(app)  # single call — v1 & v2 both use api_shared._shared_app_ref
 
 
 def _error_response(

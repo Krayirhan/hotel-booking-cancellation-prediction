@@ -22,29 +22,13 @@ from .api_shared import (
     exec_predict_proba,
     exec_decide,
     load_serving_state,
+    set_shared_app_ref as _set_app_ref,
+    get_shared_app_ref,
+    get_serving_state_for_router as _get_serving_state,
 )
 from .metrics import INFERENCE_ERRORS
 
 router_v1 = APIRouter(prefix="/v1", tags=["v1"])
-
-# Late-bound reference to app.state (set during include_router)
-_app_ref = None
-
-
-def _set_app_ref(app):
-    global _app_ref
-    _app_ref = app
-
-
-def _get_serving_state() -> ServingState:
-    if _app_ref is not None:
-        serving = getattr(_app_ref.state, "serving", None)
-        if serving is not None:
-            return serving
-    serving = load_serving_state()
-    if _app_ref is not None:
-        _app_ref.state.serving = serving
-    return serving
 
 
 @router_v1.post(
@@ -121,15 +105,16 @@ async def v1_reload(request: Request) -> ReloadResponse:
     expected_admin = os.getenv("DS_ADMIN_KEY")
     if expected_admin and request.headers.get("x-admin-key") != expected_admin:
         raise HTTPException(status_code=403, detail="x-admin-key header gereklidir.")
+    _app = get_shared_app_ref()
     lock = (
-        getattr(_app_ref.state if _app_ref else None, "_reload_lock", None)
+        getattr(_app.state if _app else None, "_reload_lock", None)
         or asyncio.Lock()
     )
     async with lock:
         try:
             serving = load_serving_state()
-            if _app_ref is not None:
-                _app_ref.state.serving = serving
+            if _app is not None:
+                _app.state.serving = serving
             return {
                 "status": "ok",
                 "message": "Serving state reloaded",

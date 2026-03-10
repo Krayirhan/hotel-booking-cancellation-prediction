@@ -206,7 +206,7 @@ jobs:
 
       - name: Bandit security scan
         run: |
-          bandit -r src/ -ll -x src/web,src/chat
+          bandit -r src/ -ll -x src/web
 
       - name: Dependency security audit
         run: |
