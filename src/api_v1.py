@@ -22,7 +22,6 @@ from .api_shared import (
     exec_predict_proba,
     exec_decide,
     load_serving_state,
-    set_shared_app_ref as _set_app_ref,
     get_shared_app_ref,
     get_serving_state_for_router as _get_serving_state,
 )
@@ -106,10 +105,7 @@ async def v1_reload(request: Request) -> ReloadResponse:
     if expected_admin and request.headers.get("x-admin-key") != expected_admin:
         raise HTTPException(status_code=403, detail="x-admin-key header gereklidir.")
     _app = get_shared_app_ref()
-    lock = (
-        getattr(_app.state if _app else None, "_reload_lock", None)
-        or asyncio.Lock()
-    )
+    lock = getattr(_app.state if _app else None, "_reload_lock", None) or asyncio.Lock()
     async with lock:
         try:
             serving = load_serving_state()
