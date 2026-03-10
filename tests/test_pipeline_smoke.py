@@ -14,6 +14,6 @@ def test_pipeline_smoke_cli():
         [py, "main.py", "predict"],
     ):
         proc = subprocess.run(cmd, cwd=root, capture_output=True, text=True)
-        assert proc.returncode == 0, (
-            f"failed: {' '.join(cmd)}\nSTDOUT:{proc.stdout}\nSTDERR:{proc.stderr}"
-        )
+        assert (
+            proc.returncode == 0
+        ), f"failed: {' '.join(cmd)}\nSTDOUT:{proc.stdout}\nSTDERR:{proc.stderr}"

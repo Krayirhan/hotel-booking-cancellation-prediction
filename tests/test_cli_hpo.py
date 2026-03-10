@@ -135,9 +135,7 @@ class TestCmdHpo:
             and c.args[1].get("run_id") == "hpo-run-002"
             for c in mock_write.call_args_list
         )
-        assert has_run_id, (
-            f"run_id=hpo-run-002 not found as payload in json_write calls: {[(c.args[0], c.args[1] if len(c.args) > 1 else None) for c in mock_write.call_args_list]}"
-        )
+        assert has_run_id, f"run_id=hpo-run-002 not found as payload in json_write calls: {[(c.args[0], c.args[1] if len(c.args) > 1 else None) for c in mock_write.call_args_list]}"
 
     def test_cmd_hpo_passes_n_trials_to_run_hpo(self, paths, cfg):
         from src.cli.hpo import cmd_hpo
