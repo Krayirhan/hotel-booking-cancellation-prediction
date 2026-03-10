@@ -25,17 +25,24 @@ def _evaluate_reasons(alerts: dict[str, Any]) -> list[str]:
         alerts.get("action_rate_deviation", False)
     ):
         reasons.append("data_drift+action_rate_deviation")
-    # Data volume anomaly alone is an operational signal — flag it but do not
-    # auto-rollback the model (it could be a pipeline/infra issue, not model
-    # degradation).  It IS surfaced as a warning so ops can investigate.
-    if bool(alerts.get("data_volume_anomaly", False)):
-        reasons.append("data_volume_anomaly")
 
     return reasons
 
 
+def _evaluate_non_rollback_signals(alerts: dict[str, Any]) -> list[str]:
+    signals: list[str] = []
+    # Operational signal only: this should not trigger policy rollback by itself.
+    if bool(alerts.get("data_volume_anomaly", False)):
+        signals.append("data_volume_anomaly")
+    return signals
+
+
 def _write_github_output(
-    output_path: Path, *, rollback_required: bool, rollback_reasons: list[str]
+    output_path: Path,
+    *,
+    rollback_required: bool,
+    rollback_reasons: list[str],
+    non_rollback_signals: list[str],
 ) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("a", encoding="utf-8") as fh:
@@ -43,6 +50,11 @@ def _write_github_output(
         fh.write(
             "rollback_reasons="
             + (",".join(rollback_reasons) if rollback_reasons else "none")
+            + "\n"
+        )
+        fh.write(
+            "non_rollback_signals="
+            + (",".join(non_rollback_signals) if non_rollback_signals else "none")
             + "\n"
         )
 
@@ -66,6 +78,7 @@ def main() -> int:
     report_path = Path(args.report_path)
     rollback_required = False
     rollback_reasons: list[str] = []
+    non_rollback_signals: list[str] = []
 
     if not report_path.exists():
         print(f"No monitoring report found: {report_path}. Skipping rollback check.")
@@ -76,10 +89,14 @@ def main() -> int:
             alerts = {}
         print(f"alerts={alerts}")
         rollback_reasons = _evaluate_reasons(alerts)
+        non_rollback_signals = _evaluate_non_rollback_signals(alerts)
         rollback_required = bool(rollback_reasons)
 
     print(f"rollback_required={rollback_required}")
     print(f"rollback_reasons={rollback_reasons if rollback_reasons else ['none']}")
+    print(
+        f"non_rollback_signals={non_rollback_signals if non_rollback_signals else ['none']}"
+    )
 
     github_output = os.getenv("GITHUB_OUTPUT")
     if github_output:
@@ -87,6 +104,7 @@ def main() -> int:
             Path(github_output),
             rollback_required=rollback_required,
             rollback_reasons=rollback_reasons,
+            non_rollback_signals=non_rollback_signals,
         )
 
     if args.fail_on_rollback and rollback_required:

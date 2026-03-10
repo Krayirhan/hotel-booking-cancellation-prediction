@@ -6,6 +6,16 @@ import { applyChartTheme } from '../lib/helpers';
  *
  * 3 tema destekler: classic → modern-light → modern-dark
  * CSS variable'ları data-theme attribute'u ile kontrol edilir.
+ * Tercih localStorage'da saklanır (anahtar: 'ds_theme').
+ *
+ * @returns {{
+ *   theme:        'classic'|'modern-light'|'modern-dark',
+ *   isModern:     boolean,
+ *   isDark:       boolean,
+ *   toggleTheme:  () => void,
+ *   themeLabel:   string,
+ *   themeIcon:    string,
+ * }}
  */
 export function useTheme() {
   const [theme, setTheme] = useState(() => {

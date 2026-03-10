@@ -1,6 +1,20 @@
 /* ========================================================
    DS Project – Geleneksel Kurumsal Arayüz (Classic Theme)
    Windows klasik / ERP tarzı enterprise UI
+   ========================================================
+
+   THEME SYSTEM — TWO-FILE ARCHITECTURE
+   ─────────────────────────────────────
+   This file: Classic / Windows 2000-era enterprise look.
+     - Activated when NO data-theme attribute is set on <html>.
+     - :root variables define the full classic colour palette.
+     - Used by the Login page, Layout (classic mode), tables,
+       modals, and all child pages when operating in classic mode.
+
+   Companion file: modern.css
+     - Activated via data-theme="modern-light" | "modern-dark".
+     - Same variable names, different values.
+     - See apps/frontend/src/STYLES.md for the full theming guide.
    ======================================================== */
 
 :root {

@@ -5,6 +5,25 @@ import { getRuns, getOverview, getDbStatus } from '../api';
  * useRuns — Koşu verileri, model ve DB durumu hook'u
  *
  * AbortController ile sayfa değişiminde inflight request'ler iptal edilir.
+ *
+ * @param {object}   opts
+ * @param {function} opts.onAuthFailed - 401 durumunda çağrılır
+ *
+ * @returns {{
+ *   apiKey:               string,
+ *   setApiKey:            (k: string) => void,
+ *   runs:                 string[],
+ *   dbRuns:               object[],
+ *   selectedRun:          string,
+ *   setSelectedRun:       (id: string) => void,
+ *   data:                 object|null,
+ *   dbStatus:             object|null,
+ *   error:                string,
+ *   loading:              boolean,
+ *   refreshRunsAndData:   () => Promise<void>,
+ *   refreshOverviewOnly:  (runId: string) => Promise<void>,
+ *   loadDbStatus:         () => Promise<void>,
+ * }}
  */
 export function useRuns({ onAuthFailed }) {
   const [apiKey, setApiKey]           = useState(import.meta.env.VITE_DEFAULT_API_KEY || '');

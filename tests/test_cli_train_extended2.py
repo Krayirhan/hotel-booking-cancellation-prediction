@@ -213,3 +213,28 @@ def test_cmd_train_importance_outer_exception_is_swallowed(monkeypatch, tmp_path
     _patch_common(monkeypatch, result=result, profile_passed=True)
     out = cli_train.cmd_train(paths, cfg, run_id="r-imp-exc")
     assert out == "r-imp-exc"
+
+
+def test_cmd_train_marks_latest_model_registry_as_relative_path(monkeypatch, tmp_path):
+    paths = _paths(tmp_path)
+    cfg = _cfg()
+
+    model = SimpleNamespace(named_steps={"clf": object(), "preprocess": None})
+    result = _result_with_model(model)
+    _patch_common(monkeypatch, result=result, profile_passed=True)
+
+    seen: dict[str, object] = {}
+
+    def _capture_mark_latest(base_dir, run_id, extra=None):
+        if base_dir == paths.models:
+            seen["run_id"] = run_id
+            seen["extra"] = extra or {}
+
+    monkeypatch.setattr(cli_train, "mark_latest", _capture_mark_latest)
+
+    out = cli_train.cmd_train(paths, cfg, run_id="r-rel-path")
+    assert out == "r-rel-path"
+    assert seen["run_id"] == "r-rel-path"
+    assert seen["extra"]["model_registry"] == (
+        "reports/metrics/r-rel-path/model_registry.json"
+    )

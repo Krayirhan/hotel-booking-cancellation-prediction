@@ -1,7 +1,18 @@
 """
 data_validation.py — Pandera-based data validation framework.
 
-Provides schema and distribution-level assertions for:
+This module is the single source of truth for all validation logic.
+A thematic package at ``src/validation/`` provides organised entry points:
+
+  - ``src.validation.raw_schema``  — Schema builders + validate_*() helpers
+  - ``src.validation.drift``       — PSI / JS, label drift, correlation drift, skew
+  - ``src.validation.anomaly``     — Row anomalies, duplicates, volume, staleness
+  - ``src.validation``             — Full re-export (backward compat)
+
+All imports from the old ``src.data_validation`` remain valid — no call sites
+need to be updated.
+
+Validation coverage:
   1. Raw data ingestion   — validate_raw_data()
   2. Processed features   — validate_processed_data()
   3. Inference payload     — validate_inference_payload()
@@ -19,11 +30,17 @@ Provides schema and distribution-level assertions for:
   15. Training-serving skew — detect_training_serving_skew()
   16. Row count consistency — validate_row_counts()
   17. Feature importance    — detect_feature_importance_drift()
+  18. PSI / JS divergence   — compute_psi()
+  19. Validation profile    — run_validation_profile()
 
 Usage:
   from src.data_validation import validate_raw_data, validate_processed_data
   validate_raw_data(df)        # raises SchemaError on contract violation
   validate_processed_data(df)  # raises SchemaError on contract violation
+
+  # Preferred thematic imports:
+  from src.validation.drift import compute_psi, detect_label_drift
+  from src.validation.anomaly import detect_row_anomalies
 """
 
 from __future__ import annotations
@@ -1430,3 +1447,54 @@ def run_validation_profile(
         warnings=warnings_list,
         details=details,
     )
+
+
+# ─── Basic Schema Checks (merged from validate.py) ────────────────────────────
+#
+# These lightweight checks are kept here alongside the Pandera-based schemas so
+# all data contract logic lives in one module.  ``src/validate.py`` re-exports
+# them for backward compatibility with existing imports.
+
+
+def basic_schema_checks(df: pd.DataFrame, target_col: str) -> None:
+    """Fast pre-flight checks before any Pandera schema validation.
+
+    Raises ValueError on empty DataFrame, missing target column, or duplicate
+    column names.  Logs a success message otherwise.
+    """
+    if df.empty:
+        raise ValueError("Dataset is empty.")
+
+    if target_col not in df.columns:
+        raise ValueError(f"Target column '{target_col}' not found in dataset columns.")
+
+    if len(set(df.columns)) != len(df.columns):
+        raise ValueError("Duplicate column names detected.")
+
+    logger.info("Basic schema checks passed.")
+
+
+def validate_target_labels(
+    df: pd.DataFrame, target_col: str, allowed: set
+) -> None:
+    """Assert all values in ``target_col`` belong to the ``allowed`` set.
+
+    Raises ValueError listing unexpected labels so pipeline fails fast before
+    any model training or preprocessing step.
+    """
+    y = df[target_col].astype(str).str.lower().str.strip()
+    uniq = set(y.unique())
+    if not uniq.issubset(allowed):
+        raise ValueError(
+            f"Unexpected labels in {target_col}: {sorted(uniq)} | allowed={sorted(allowed)}"
+        )
+    logger.info("Target labels OK -> %s", sorted(uniq))
+
+
+def null_ratio_report(df: pd.DataFrame, top_k: int = 10) -> pd.Series:
+    """Return a Series of null ratios (descending) for exploratory diagnosis.
+
+    Useful for choosing imputation strategy before fitting the Pandera schema.
+    """
+    ratios = df.isna().mean().sort_values(ascending=False)
+    return ratios.head(top_k)

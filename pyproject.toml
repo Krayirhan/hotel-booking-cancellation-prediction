@@ -6,8 +6,11 @@ build-backend = "setuptools.build_meta"
 name = "ds-project"
 version = "1.2.0"
 description = "Hotel booking cancellation prediction"
-requires-python = ">=3.10"
-dependencies = []
+requires-python = ">=3.12"
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements-prod.txt"] }
 
 [tool.setuptools.packages.find]
 include = ["src", "src.*"]
@@ -18,4 +21,24 @@ addopts = "-q"
 
 [tool.ruff]
 src = ["src"]
-target-version = "py310"
+target-version = "py312"
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_return_any = false
+disallow_untyped_defs = false
+# Enable stricter checks progressively — set to true when all stubs are added
+strict = false
+exclude = [
+    "alembic/",
+    "scripts/",
+    "tests/",
+    "notebooks/",
+]
+
+[[tool.mypy.overrides]]
+module = ["src.api", "src.api_v1", "src.api_v2", "src.cli.train", "src.user_store"]
+disallow_untyped_defs = true
+warn_return_any = true

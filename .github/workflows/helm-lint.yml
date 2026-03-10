@@ -1,0 +1,46 @@
+name: helm-lint
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.15.4
+
+      - name: Helm lint (base values)
+        run: |
+          helm lint deploy/helm/ds-project \
+            --values deploy/helm/ds-project/values.yaml
+
+      - name: Helm lint (staging values)
+        run: |
+          helm lint deploy/helm/ds-project \
+            --values deploy/helm/ds-project/values.yaml \
+            --values deploy/helm/ds-project/values-staging.yaml
+
+      - name: Helm lint (production values)
+        run: |
+          helm lint deploy/helm/ds-project \
+            --values deploy/helm/ds-project/values.yaml \
+            --values deploy/helm/ds-project/values-production.yaml
+
+      - name: Helm template validate
+        run: |
+          helm template ds-project deploy/helm/ds-project \
+            --values deploy/helm/ds-project/values.yaml > /dev/null
+          helm template ds-project-staging deploy/helm/ds-project \
+            --values deploy/helm/ds-project/values.yaml \
+            --values deploy/helm/ds-project/values-staging.yaml > /dev/null
+          helm template ds-project-prod deploy/helm/ds-project \
+            --values deploy/helm/ds-project/values.yaml \
+            --values deploy/helm/ds-project/values-production.yaml > /dev/null

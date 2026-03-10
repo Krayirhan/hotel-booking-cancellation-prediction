@@ -45,7 +45,7 @@ Amaç; modeli **tekrarlanabilir**, **izlenebilir**, **güvenli** ve **üretime u
 
 ## Teknoloji ve Mimari
 
-- **Dil/Runtime:** Python 3.10+
+- **Dil/Runtime:** Python 3.12+
 - **Paketleme:** [pyproject.toml](pyproject.toml)
 - **Pipeline:** [dvc.yaml](dvc.yaml)
 - **API ve servis kodu:** [src](src), [apps/backend](apps/backend)
@@ -53,6 +53,55 @@ Amaç; modeli **tekrarlanabilir**, **izlenebilir**, **güvenli** ve **üretime u
 - **Dağıtım artefaktları:** [deploy](deploy)
 - **Testler:** [tests](tests)
 - **Raporlar ve metrikler:** [reports](reports)
+
+### Bileşen Sorumlulukları
+
+| Modül | Sorumluluk |
+|---|---|
+| `src/api.py` | FastAPI uygulama fabrikası; HTTP middleware, CORS, rotalar |
+| `src/api_lifespan.py` | FastAPI lifespan context — DB init, store bootstrap, servis başlatma/kapatma |
+| `src/api_v1.py` / `api_v2.py` | Sürümlü tahmin endpoint'leri (`/v1`, `/v2`) |
+| `src/dashboard.py` | Dashboard API router + Redis önbellek katmanı (TTL 45 s) |
+| `src/dashboard_store.py` | SQLAlchemy `DashboardStore` — deneme/koşu kayıtları |
+| `src/chat/router.py` | SSE chat akış endpoint'i, RAG pipeline koordinasyonu |
+| `src/chat/knowledge/db_store.py` | pgvector HNSW tabanlı bilgi deposu; Prometheus ile izlenir |
+| `src/data_validation.py` | Pandera şema doğrulama + drift + anomali tespit |
+| `src/validate.py` | `data_validation.py`'den geriye dönük uyumlu yeniden dışa aktarım |
+| `src/guests.py` | Misafir CRUD router |
+| `src/metrics.py` | Prometheus sayaç/histogram tanımları (istek, çıkarım, bilgi alma) |
+| `src/monitoring.py` | PSI / veri kayması izleme |
+| `apps/frontend/src/` | React 18 SPA; `styles.css` (klasik) + `modern.css` (light/dark) tema sistemi |
+
+### Sistem Mimarisi (özet)
+
+```
+┌──────────────────────── İstemci ─────────────────────────────┐
+│  React SPA  (Vite · react-router-dom · Chart.js)             │
+│  hooks: useAuth · useRuns · useChat · useTheme · useSystem    │
+└──────────────────┬───────────────────────────────────────────┘
+                   │ HTTP / SSE
+┌──────────────────▼───────────────────────────────────────────┐
+│  FastAPI  (src/api.py + api_lifespan.py)                     │
+│  ├─ /v1 · /v2  → ML tahmin + karar                          │
+│  ├─ /dashboard → DashboardStore (PostgreSQL)                 │
+│  │              └─ Redis önbellek (TTL 45 s)                 │
+│  ├─ /chat      → RAG pipeline (Ollama + pgvector)            │
+│  └─ /guests    → CRM kayıtları (PostgreSQL)                  │
+└───┬─────────────┬──────────────┬────────────────────────────┘
+    │             │              │
+ PostgreSQL     Redis         Ollama (qwen2.5:7b)
+ + pgvector   (önbellek       (yerel LLM + gömme)
+ (veri/model)  + oturum)
+```
+
+### Mimari Kararlar (ADR)
+
+Önemli tasarım kararları `docs/adr/` dizininde belgelenmiştir:
+
+- [ADR-010](docs/adr/010-versioned-api-v1-v2.md) — Sürümlü API (v1 / v2)
+- [ADR-011](docs/adr/011-ollama-self-hosted.md) — Kendi barındırılan LLM (Ollama)
+- [ADR-012](docs/adr/012-postgres-plus-redis.md) — Depolama: PostgreSQL + Redis
+- [ADR-013](docs/adr/013-calibration-sigmoid-isotonic.md) — İki aşamalı kalibrasyon
 
 ## Başka PC'de İlk Kurulum (Docker ile)
 
@@ -64,7 +113,7 @@ Amaç; modeli **tekrarlanabilir**, **izlenebilir**, **güvenli** ve **üretime u
 |---|---|---|
 | Docker Desktop | 24+ | `docker --version` |
 | Docker Compose v2 | dahili | `docker compose version` |
-| Python | 3.10+ | sadece `check_setup.py` için |
+| Python | 3.12+ | sadece `check_setup.py` için |
 | Git | herhangi | `git --version` |
 
 ### Adım 1 — Klonla
@@ -84,7 +133,7 @@ Script **10 kategoriyi** tek seferde kontrol eder ve her eksik için ne yapılac
 
 | # | Kontrol | Açıklama |
 |---|---------|----------|
-| 1 | Python sürümü | ≥ 3.10 gerekli |
+| 1 | Python sürümü | ≥ 3.12 gerekli |
 | 2 | Python paketleri | requirements.txt içindeki tüm paketler |
 | 3 | Docker | Engine + Compose v2 |
 | 4 | Node.js / npm | ≥ v18 (frontend dev için) |
@@ -251,7 +300,7 @@ Rate limit backend seçenekleri:
 
 Bu projede önerilen yapı:
 
-- Backend: FastAPI (`src`) + entrypoint (`main.py serve-api`)
+- Backend: FastAPI (`src`) + production entrypoint (`python -m apps.backend.main`)
 - Frontend: React/Vite (`apps/frontend`)
 - ML çekirdeği: mevcut pipeline (`src/train.py`, `src/evaluate.py`, `src/predict.py`)
 

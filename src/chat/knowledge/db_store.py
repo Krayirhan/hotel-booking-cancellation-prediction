@@ -40,6 +40,12 @@ from sqlalchemy import (
 from sqlalchemy.engine import Engine
 
 from .policies import KNOWLEDGE_BASE, KnowledgeChunk
+from src.metrics import (
+    KNOWLEDGE_RETRIEVAL_TOTAL,
+    KNOWLEDGE_RETRIEVAL_EMPTY,
+    KNOWLEDGE_RETRIEVAL_HIT_COUNT,
+    KNOWLEDGE_SIMILARITY_SCORE,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -210,16 +216,29 @@ class KnowledgeDbStore:
         """Cosine similarity search via pgvector HNSW index.
 
         Falls back to priority-ordered chunks if embedding unavailable.
+        Records Prometheus metrics: retrieval count, hit count, empty rate.
         """
         client = self._get_embed_client()
         if client is not None:
             try:
                 emb = client.embed_sync(query)
                 if emb is not None:
-                    return self._pgvector_search(emb, top_k)
+                    results = self._pgvector_search(emb, top_k)
+                    method = "vector"
+                    KNOWLEDGE_RETRIEVAL_TOTAL.labels(method=method).inc()
+                    KNOWLEDGE_RETRIEVAL_HIT_COUNT.labels(method=method).observe(len(results))
+                    if not results:
+                        KNOWLEDGE_RETRIEVAL_EMPTY.labels(method=method).inc()
+                    return results
             except Exception as exc:
                 logger.debug("pgvector search failed, falling back: %s", exc)
-        return self._priority_fallback(top_k)
+        results = self._priority_fallback(top_k)
+        method = "fallback"
+        KNOWLEDGE_RETRIEVAL_TOTAL.labels(method=method).inc()
+        KNOWLEDGE_RETRIEVAL_HIT_COUNT.labels(method=method).observe(len(results))
+        if not results:
+            KNOWLEDGE_RETRIEVAL_EMPTY.labels(method=method).inc()
+        return results
 
     async def retrieve_by_text_async(
         self, *, query: str, top_k: int = 3
@@ -280,6 +299,10 @@ class KnowledgeDbStore:
                 ),
                 {"emb": str(emb), "k": top_k},
             ).fetchall()
+
+        if rows:
+            top_similarity = float(rows[0][6]) if rows[0][6] is not None else 0.0
+            KNOWLEDGE_SIMILARITY_SCORE.observe(top_similarity)
 
         return [
             KnowledgeChunk(

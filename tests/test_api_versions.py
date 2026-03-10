@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -276,3 +277,54 @@ def test_v2_reload_failure(monkeypatch):
 def test_v2_model_name_helper():
     assert api_v2._model_name(None) == ""
     assert api_v2._model_name(_dummy_serving()) == "models/xgb.joblib"
+
+
+def test_v2_explain_success_fallback_and_404(monkeypatch, tmp_path):
+    metrics_root = tmp_path / "reports" / "metrics"
+    run_id = "run_x"
+    run_dir = metrics_root / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    (run_dir / "permutation_importance.json").write_text(
+        json.dumps(
+            {
+                "method": "permutation_importance",
+                "scoring": "roc_auc",
+                "n_repeats": 5,
+                "n_features": 1,
+                "ranking": [
+                    {
+                        "feature": "lead_time",
+                        "importance_mean": 0.2,
+                        "importance_std": 0.01,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        api_v2,
+        "Paths",
+        lambda: SimpleNamespace(reports_metrics=metrics_root),
+    )
+    req = _dummy_request(request_id="rid-explain")
+    out = api_v2.v2_explain(run_id, req)
+    assert out.run_id == run_id
+    assert out.method == "permutation_importance"
+    assert out.meta.request_id == "rid-explain"
+
+    (run_dir / "permutation_importance.json").unlink()
+    (run_dir / "feature_importance.json").write_text(
+        json.dumps({"lead_time": 0.2, "adr": 0.1}),
+        encoding="utf-8",
+    )
+    fallback = api_v2.v2_explain(run_id, req)
+    assert fallback.method == "feature_importance"
+    assert len(fallback.ranking) == 2
+
+    (run_dir / "feature_importance.json").unlink()
+    with pytest.raises(HTTPException) as ex:
+        api_v2.v2_explain(run_id, req)
+    assert ex.value.status_code == 404

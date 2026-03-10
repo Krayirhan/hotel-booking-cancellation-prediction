@@ -153,18 +153,18 @@ TOTAL_CHECKS = 10
 
 
 def check_python() -> None:
-    """1 — Python >= 3.10"""
+    """1 — Python >= 3.12"""
     print(hdr("Python Sürümü", 1, TOTAL_CHECKS))
     major, minor = sys.version_info[:2]
     ver = f"{major}.{minor}.{sys.version_info[2]}"
-    if (major, minor) >= (3, 10):
-        print(ok(f"Python {ver}  (>= 3.10)"))
+    if (major, minor) >= (3, 12):
+        print(ok(f"Python {ver}  (>= 3.12)"))
     else:
-        print(fail(f"Python {ver} — en az 3.10 gerekli"))
+        print(fail(f"Python {ver} — en az 3.12 gerekli"))
         print(info("https://www.python.org/downloads/"))
         _issue(
             "python_version",
-            f"Python {ver} — 3.10+ gerekli",
+            f"Python {ver} — 3.12+ gerekli",
             "https://www.python.org/downloads/",
         )
 

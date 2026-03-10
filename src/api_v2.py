@@ -10,8 +10,11 @@ Enhanced API with:
 from __future__ import annotations
 
 import asyncio
+import hmac
+import json
 import os
 import time
+from pathlib import Path
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Request
@@ -31,6 +34,7 @@ from .api_shared import (
 )
 from .metrics import INFERENCE_ERRORS
 from .tracing import set_span_attribute
+from .config import Paths
 
 router_v2 = APIRouter(prefix="/v2", tags=["v2"])
 
@@ -94,6 +98,103 @@ class V2ReloadResponse(BaseModel):
     model: str
     policy_path: str
     meta: V2Meta
+
+
+class V2ExplainResponse(BaseModel):
+    run_id: str
+    method: str
+    scoring: str | None = None
+    n_repeats: int | None = None
+    n_features: int | None = None
+    ranking: list[dict] = Field(default_factory=list)
+    shap_summary: dict | None = None
+    meta: V2Meta
+
+
+def _read_json(path: Path) -> dict | None:
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _latest_run_id(metrics_root: Path) -> str:
+    if not metrics_root.exists():
+        raise HTTPException(status_code=404, detail="Explainability run bulunamadi.")
+
+    latest = _read_json(metrics_root / "latest.json") or {}
+    run_id = str(latest.get("run_id") or "").strip()
+    if run_id:
+        return run_id
+
+    run_dirs = sorted([p.name for p in metrics_root.iterdir() if p.is_dir()], reverse=True)
+    if run_dirs:
+        return run_dirs[0]
+    raise HTTPException(
+        status_code=404,
+        detail="Explainability run bulunamadi.",
+    )
+
+
+def _load_explain_payload(run_id: str) -> tuple[str, dict, dict | None]:
+    paths = Paths()
+    metrics_root = paths.reports_metrics
+    resolved_run_id = _latest_run_id(metrics_root) if run_id in {"latest", "current"} else run_id
+
+    run_dir = metrics_root / resolved_run_id
+    if run_id not in {"latest", "current"} and not run_dir.exists():
+        raise HTTPException(status_code=404, detail=f"Run bulunamadi: {resolved_run_id}")
+
+    search_dirs = [d for d in [run_dir, metrics_root] if d.exists()]
+
+    report: dict | None = None
+    for directory in search_dirs:
+        report = _read_json(directory / "permutation_importance.json")
+        if report:
+            break
+
+        fallback = _read_json(directory / "feature_importance.json")
+        if isinstance(fallback, dict):
+            ranking = sorted(
+                [
+                    {
+                        "feature": feature,
+                        "importance_mean": importance,
+                        "importance_std": None,
+                    }
+                    for feature, importance in fallback.items()
+                ],
+                key=lambda item: -(item["importance_mean"] or 0),
+            )
+            report = {
+                "method": "feature_importance",
+                "scoring": "unknown",
+                "n_repeats": None,
+                "n_features": len(ranking),
+                "ranking": ranking,
+            }
+            break
+
+    if report is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"Explainability raporu bulunamadi ({resolved_run_id}). "
+                "Once `python main.py explain` komutunu calistirin."
+            ),
+        )
+
+    shap_summary = None
+    for directory in search_dirs:
+        payload = _read_json(directory / "shap_summary.json")
+        if payload:
+            shap_summary = payload
+            break
+
+    return resolved_run_id, report, shap_summary
 
 
 # ─── V2 Endpoints ──────────────────────────────────────────────────────
@@ -183,6 +284,32 @@ def v2_decide(payload: RecordsPayload, request: Request) -> V2DecideResponse:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router_v2.get(
+    "/explain/{run_id}",
+    response_model=V2ExplainResponse,
+    responses={404: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+)
+def v2_explain(run_id: str, request: Request) -> V2ExplainResponse:
+    t0 = time.time()
+    resolved_run_id, report, shap_summary = _load_explain_payload(run_id)
+    rid = getattr(request.state, "request_id", None)
+    return V2ExplainResponse(
+        run_id=resolved_run_id,
+        method=str(report.get("method") or "unknown"),
+        scoring=report.get("scoring"),
+        n_repeats=report.get("n_repeats"),
+        n_features=report.get("n_features"),
+        ranking=list(report.get("ranking") or []),
+        shap_summary=shap_summary,
+        meta=V2Meta(
+            api_version="v2",
+            model_used=str(report.get("model_used") or ""),
+            latency_ms=round((time.time() - t0) * 1000, 2),
+            request_id=rid,
+        ),
+    )
+
+
 def _model_name(serving: ServingState | None) -> str:
     return str(
         getattr(getattr(serving, "policy", None), "selected_model_artifact", "") or ""
@@ -197,7 +324,9 @@ def _model_name(serving: ServingState | None) -> str:
 async def v2_reload(request: Request) -> V2ReloadResponse:
     t0 = time.time()
     expected_admin = os.getenv("DS_ADMIN_KEY")
-    if expected_admin and request.headers.get("x-admin-key") != expected_admin:
+    if expected_admin and not hmac.compare_digest(
+        request.headers.get("x-admin-key") or "", expected_admin
+    ):
         raise HTTPException(status_code=403, detail="x-admin-key header gereklidir.")
     _app = _app_ref or get_shared_app_ref()
     lock = getattr(_app.state if _app else None, "_reload_lock", None) or asyncio.Lock()

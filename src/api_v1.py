@@ -8,6 +8,7 @@ Maintains backward compatibility.
 from __future__ import annotations
 
 import asyncio
+import hmac
 import os
 
 from fastapi import APIRouter, HTTPException, Request
@@ -119,7 +120,9 @@ def _model_name(serving: ServingState | None) -> str:
 )
 async def v1_reload(request: Request) -> ReloadResponse:
     expected_admin = os.getenv("DS_ADMIN_KEY")
-    if expected_admin and request.headers.get("x-admin-key") != expected_admin:
+    if expected_admin and not hmac.compare_digest(
+        request.headers.get("x-admin-key") or "", expected_admin
+    ):
         raise HTTPException(status_code=403, detail="x-admin-key header gereklidir.")
     _app = _app_ref or get_shared_app_ref()
     lock = getattr(_app.state if _app else None, "_reload_lock", None) or asyncio.Lock()

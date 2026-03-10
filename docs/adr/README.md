@@ -15,6 +15,10 @@ This directory contains Architecture Decision Records for the DS Project.
 | [ADR-007](007-api-versioning.md) | API Versioning Strategy | Accepted | 2026-02-18 |
 | [ADR-008](008-lua-rate-limiting.md) | Lua-Based Distributed Rate Limiting | Accepted | 2026-02-19 |
 | [ADR-009](009-model-health-metrics.md) | Prometheus Gauges for Model Health Monitoring | Accepted | 2026-02-19 |
+| [ADR-010](010-versioned-api-v1-v2.md) | Versioned API (v1 / v2) Strategy | Accepted | 2026-02-19 |
+| [ADR-011](011-ollama-self-hosted.md) | Self-Hosted LLM with Ollama | Accepted | 2026-02-19 |
+| [ADR-012](012-postgres-plus-redis.md) | Dual Storage: PostgreSQL + Redis | Accepted | 2026-02-19 |
+| [ADR-013](013-calibration-sigmoid-isotonic.md) | Two-Stage Model Calibration | Accepted | 2026-02-19 |
 
 ## ADR Format
 

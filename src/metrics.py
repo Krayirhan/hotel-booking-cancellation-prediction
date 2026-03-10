@@ -78,5 +78,33 @@ LABEL_DRIFT = Gauge(
 )
 
 
+# ── Knowledge retrieval quality gauges ─────────────────────────────────────
+
+KNOWLEDGE_RETRIEVAL_TOTAL = Counter(
+    "ds_knowledge_retrieval_total",
+    "Total number of knowledge retrieval calls",
+    ["method"],  # 'vector' | 'fallback'
+)
+
+KNOWLEDGE_RETRIEVAL_EMPTY = Counter(
+    "ds_knowledge_retrieval_empty_total",
+    "Knowledge retrievals that returned zero chunks (empty result)",
+    ["method"],
+)
+
+KNOWLEDGE_RETRIEVAL_HIT_COUNT = Histogram(
+    "ds_knowledge_retrieval_hits",
+    "Number of chunks returned per retrieval call",
+    ["method"],
+    buckets=(0, 1, 2, 3, 5, 10),
+)
+
+KNOWLEDGE_SIMILARITY_SCORE = Histogram(
+    "ds_knowledge_similarity_score",
+    "Top-1 cosine similarity score of each retrieval (pgvector)",
+    buckets=(0.0, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1.0),
+)
+
+
 def render_metrics() -> tuple[bytes, str]:
     return generate_latest(), CONTENT_TYPE_LATEST

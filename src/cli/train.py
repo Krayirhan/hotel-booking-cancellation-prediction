@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 import joblib
@@ -354,10 +355,13 @@ def cmd_train(paths: Paths, cfg: ExperimentConfig, run_id: Optional[str] = None)
     except Exception as e:
         logger.warning(f"Could not extract feature importance: {e}")
 
+    model_registry_pointer = (
+        Path("reports") / "metrics" / run_id / "model_registry.json"
+    ).as_posix()
     mark_latest(
         paths.models,
         run_id,
-        extra={"model_registry": str(run_metrics_dir / "model_registry.json")},
+        extra={"model_registry": model_registry_pointer},
     )
     mark_latest(paths.reports_metrics, run_id)
 

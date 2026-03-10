@@ -7,6 +7,34 @@ import { startChatSession, getChatSummary, predictRiskScore, createGuest, stream
  * Müşteri formu, oturum yönetimi ve mesajlaşma state'i.
  * AbortController ile oturum açma cancel edilebilir.
  * Form değişince debounced auto-predict çalışır (600 ms).
+ *
+ * @param {object}   opts
+ * @param {string}   opts.apiKey          - X-API-KEY header değeri
+ * @param {function} opts.onAuthFailed    - 401 alındığında çağrılır
+ * @param {object}   [opts.initialCustomer={}] - Mevcut misafir verisiyle formu ön doldurur
+ *
+ * @returns {{
+ *   sessionId:           string,
+ *   messages:            Array<{role: string, content: string}>,
+ *   input:               string,
+ *   quickActions:        string[],
+ *   summary:             object|null,
+ *   busy:                boolean,
+ *   error:               string,
+ *   riskScore:           number|null,
+ *   riskLabel:           string,
+ *   predicting:          boolean,
+ *   selectedModel:       string|null,
+ *   guestId:             number|null,
+ *   guestSaved:          boolean,
+ *   customer:            object,
+ *   setInput:            (v: string) => void,
+ *   setSelectedModel:    (m: string|null) => void,
+ *   handleCustomerChange:(key: string, value: any) => void,
+ *   handleStartSession:  () => Promise<void>,
+ *   handleSend:          () => Promise<void>,
+ *   handleSaveGuest:     () => Promise<void>,
+ * }}
  */
 export function useChat({ apiKey, onAuthFailed, initialCustomer = {} }) {
   const [sessionId, setSessionId]         = useState('');

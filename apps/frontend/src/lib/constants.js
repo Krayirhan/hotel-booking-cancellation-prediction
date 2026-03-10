@@ -22,6 +22,7 @@ export const NAV_ITEMS = [
   { key: 'models',   path: '/models',   label: 'Model Karşılaştırma', desc: 'Tüm modellerin detaylı analizi' },
   { key: 'pipeline', path: '/pipeline', label: 'Veri İşleme Hattı',  desc: 'Önişleme, özellik çıkarımı ve model eğitim adımları' },
   { key: 'runs',     path: '/runs',     label: 'Koşu Geçmişi',       desc: 'Geçmiş çalıştırma kayıtları' },
+  { key: 'guests', path: '/guests', label: 'Misafirler',        desc: 'Misafir kayıt, arama ve güncelleme' },
   { key: 'chat',   path: '/chat',   label: 'Misafir & Chat',    desc: 'Misafir kayıt, liste ve iptal azaltma asistanı' },
 
   { key: 'system', path: '/system', label: 'Sistem Durumu',     desc: 'Veritabanı ve altyapı bilgisi' },

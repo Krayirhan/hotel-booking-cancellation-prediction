@@ -73,6 +73,9 @@ secretEnvVars:
   - name: REDIS_URL
     secretName: ds-project-secrets
     secretKey: REDIS_URL
+  - name: DATABASE_URL
+    secretName: ds-project-secrets
+    secretKey: DATABASE_URL
 
 probes:
   liveness:

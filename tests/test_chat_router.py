@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
@@ -47,6 +48,34 @@ class _Orchestrator:
             "created_at": 1.0,
             "last_active": 2.0,
         }
+
+
+class _KnowledgeDb:
+    def __init__(self):
+        self.items = []
+        self.calls = 0
+
+    def create_chunk(self, **kwargs):
+        self.calls += 1
+        self.items.append(
+            {
+                "id": self.calls,
+                "chunk_id": kwargs["chunk_id"],
+                "category": kwargs["category"],
+                "is_active": True,
+                "has_embedding": True,
+            }
+        )
+        return {"id": self.calls, "chunk_id": kwargs["chunk_id"]}
+
+    def list_chunks(self, include_inactive=False):
+        if include_inactive:
+            return list(self.items)
+        return [item for item in self.items if item.get("is_active")]
+
+
+def _req(headers=None):
+    return SimpleNamespace(headers=headers or {})
 
 
 def test_chat_health_ok_and_degraded(monkeypatch):
@@ -109,3 +138,36 @@ def test_summary_success_and_404(monkeypatch):
     with pytest.raises(HTTPException) as ex:
         asyncio.run(router.summary("s-1"))
     assert ex.value.status_code == 404
+
+
+def test_knowledge_admin_key_guard(monkeypatch):
+    monkeypatch.setenv("DS_ADMIN_KEY", "admin-secret")
+    with pytest.raises(HTTPException) as ex:
+        asyncio.run(router.list_knowledge_chunks(_req(), include_inactive=True))
+    assert ex.value.status_code == 403
+
+
+def test_knowledge_ingest_and_stats(monkeypatch):
+    db = _KnowledgeDb()
+    monkeypatch.setenv("DS_ADMIN_KEY", "admin-secret")
+    monkeypatch.setattr(router, "_require_db_store", lambda: db)
+
+    body = router.KnowledgeIngestRequest(
+        source_name="policy-update",
+        source_type="text",
+        content=" ".join(["retention"] * 260),
+        category="playbook",
+        tags=["retention"],
+        priority=4,
+        chunk_size=300,
+        chunk_overlap=50,
+    )
+    req = _req({"x-admin-key": "admin-secret"})
+    out = asyncio.run(router.ingest_knowledge(body, req))
+    assert out["chunks_created"] >= 1
+    assert out["chunks_failed"] == 0
+
+    stats = asyncio.run(router.knowledge_stats(req))
+    assert stats["total_chunks"] == out["chunks_created"]
+    assert stats["embedded_chunks"] == out["chunks_created"]
+    assert stats["categories"]["playbook"] == out["chunks_created"]

@@ -10,3 +10,24 @@ repos:
       - id: ruff
         args: ["--fix"]
       - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.13.0
+    hooks:
+      - id: mypy
+        stages: [pre-push]
+        args:
+          - --ignore-missing-imports
+          - --no-error-summary
+        files: ^src/
+        additional_dependencies:
+          - "fastapi>=0.100"
+          - "pydantic>=2.0"
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.10
+    hooks:
+      - id: bandit
+        stages: [pre-push]
+        args: ["-r", "src/", "-ll", "-x", "src/web"]
+        pass_filenames: false

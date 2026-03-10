@@ -1,0 +1,213 @@
+# ---------------------------------------------------------------------------
+# DS Project — Production Stack
+#
+# Differences from docker-compose.dev.yml:
+#   ✓ read_only containers (filesystem immutable except tmpfs mounts)
+#   ✓ restart: always (auto-recovery on crash)
+#   ✓ no dev tools: MinIO, MLflow, Jaeger are external in prod (Helm/k8s)
+#   ✓ resource limits per service (requests + limits)
+#   ✓ no source-volume mounts (models/reports baked into image or mounted RO)
+#   ✓ LOG_FORMAT=json for structured log ingestion
+#   ✓ DS_ENV=production → DS_ADMIN_KEY enforcement kicks in
+#
+# Usage (CI/staging):
+#   docker compose -f docker-compose.prod.yml up -d --build
+#   docker compose -f docker-compose.prod.yml ps
+#
+# Required secrets (pass via env or .env.prod):
+#   DS_API_KEY, DS_ADMIN_KEY, DATABASE_URL, REDIS_URL,
+#   DASHBOARD_ADMIN_PASSWORD_ADMIN, CORS_ALLOW_ORIGINS
+# ---------------------------------------------------------------------------
+
+services:
+  # ---------- ML API (production) ----------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ds-project-api:${IMAGE_TAG:-latest}
+    container_name: ds-project-api-prod
+    restart: always
+    read_only: true
+    tmpfs:
+      - /tmp
+    env_file:
+      - path: .env.prod
+        required: false
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      - DS_ENV=${DS_ENV:-production}
+      - DS_API_KEY=${DS_API_KEY}
+      - DS_ADMIN_KEY=${DS_ADMIN_KEY}
+      - LOG_FORMAT=${LOG_FORMAT:-json}
+      - RATE_LIMIT_BACKEND=${RATE_LIMIT_BACKEND:-redis}
+      - REDIS_URL=${REDIS_URL}
+      - DATABASE_URL=${DATABASE_URL}
+      - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS}
+      - DASHBOARD_AUTH_ENABLED=${DASHBOARD_AUTH_ENABLED:-true}
+      - DASHBOARD_ADMIN_USERNAME=${DASHBOARD_ADMIN_USERNAME:-ds_readonly}
+      - DASHBOARD_ADMIN_PASSWORD=${DASHBOARD_ADMIN_PASSWORD}
+      - DASHBOARD_ADMIN_PASSWORD_ADMIN=${DASHBOARD_ADMIN_PASSWORD_ADMIN}
+      - DASHBOARD_TOKEN_TTL_MINUTES=${DASHBOARD_TOKEN_TTL_MINUTES:-60}
+      - DASHBOARD_URL=${DASHBOARD_URL}
+      - DASHBOARD_CACHE_TTL_SECONDS=${DASHBOARD_CACHE_TTL_SECONDS:-45}
+      # Tracing — point to external Jaeger/Tempo in prod
+      - OTEL_ENABLED=${OTEL_ENABLED:-true}
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-ds-project-api}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+      - OTEL_EXPORTER_OTLP_INSECURE=${OTEL_EXPORTER_OTLP_INSECURE:-false}
+      - OTEL_DEPLOYMENT_ENV=production
+      # Ollama — external or self-hosted in prod cluster
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:7b}
+      - OLLAMA_EMBED_MODEL=${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      - CHAT_SESSION_TTL_SECONDS=${CHAT_SESSION_TTL_SECONDS:-3600}
+      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    volumes:
+      # Mount model artifacts read-only from host or external volume
+      - ${MODELS_PATH:-./models}:/app/models:ro
+      - ${REPORTS_PATH:-./reports}:/app/reports:ro
+      - ./params.yaml:/app/params.yaml:ro
+    networks:
+      - ds-prod-net
+
+  # ---------- Frontend (production build served by nginx) ----------
+  frontend:
+    build:
+      context: apps/frontend
+      dockerfile: Dockerfile.prod
+    image: ds-project-frontend:${IMAGE_TAG:-latest}
+    container_name: ds-project-frontend-prod
+    restart: always
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    environment:
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-}
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+    networks:
+      - ds-prod-net
+
+  # ---------- Redis (production, no persistent save config for simplicity) ----------
+  redis:
+    image: redis:7-alpine
+    container_name: ds-project-redis-prod
+    restart: always
+    read_only: true
+    tmpfs:
+      - /tmp
+    # Minimal save policy — adjust for durability requirements
+    command: redis-server --save "" --loglevel warning --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 384M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+    volumes:
+      - redis-prod-data:/data
+    networks:
+      - ds-prod-net
+
+  # ---------- Prometheus (production scrape target: api only) ----------
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: ds-project-prometheus-prod
+    restart: always
+    read_only: true
+    tmpfs:
+      - /prometheus/wal:size=100m
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./deploy/dev/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-prod-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.enable-lifecycle"
+    depends_on:
+      api:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 1G
+        reservations:
+          memory: 256M
+    networks:
+      - ds-prod-net
+
+  # ---------- Grafana (production) ----------
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: ds-project-grafana-prod
+    restart: always
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GF_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_ADMIN_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=${GF_ROOT_URL:-http://localhost:3000}
+      - GF_SECURITY_DISABLE_GRAVATAR=true
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+    volumes:
+      - ./deploy/dev/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/monitoring/grafana-dashboard.json:/var/lib/grafana/dashboards/ds-project.json:ro
+      - grafana-prod-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    networks:
+      - ds-prod-net
+
+volumes:
+  redis-prod-data:
+  prometheus-prod-data:
+  grafana-prod-data:
+
+networks:
+  ds-prod-net:
+    driver: bridge

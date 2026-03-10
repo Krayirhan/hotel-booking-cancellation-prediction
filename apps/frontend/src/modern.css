@@ -2,6 +2,23 @@
    DS Project – 2026 Kurumsal Modern Arayüz
    Aydınlık (modern-light) + Karanlık (modern-dark)
    Yüksek kontrast · Temiz tipografi · Profesyonel görünüm
+   ========================================================
+
+   THEME SYSTEM — TWO-FILE ARCHITECTURE
+   ─────────────────────────────────────
+   This file: Modern light + dark themes.
+     - Activated via [data-theme="modern-light"] or
+       [data-theme="modern-dark"] on the <html> element.
+     - Layout.jsx sets document.documentElement.setAttribute
+       ('data-theme', theme) based on the useTheme() hook.
+     - All component-specific overrides in this file use
+       [data-theme] attribute selectors for proper specificity.
+
+   Companion file: styles.css
+     - Always loaded; provides the classic theme (no attribute).
+     - Re-declares :root variables; modern.css overrides them
+       inside [data-theme] selectors.
+     - See apps/frontend/src/STYLES.md for the full theming guide.
    ======================================================== */
 
 /* ============================

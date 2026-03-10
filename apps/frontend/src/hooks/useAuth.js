@@ -4,10 +4,18 @@ import { login, logout, me } from '../api';
 /**
  * useAuth — Kimlik doğrulama hook'u
  *
- * State:
- *   authenticated, currentUser, loginError, checking
- * Actions:
- *   handleLogin(username, password), handleLogout(), handleAuthFailure()
+ * JWT token'ı localStorage'dan okur ve /auth/me ile doğrular.
+ * Login / logout / auth-failure aksiyonlarını yönetir.
+ *
+ * @returns {{
+ *   authenticated: boolean,
+ *   currentUser:   string,
+ *   loginError:    string,
+ *   checking:      boolean,
+ *   handleLogin:   (username: string, password: string) => Promise<boolean>,
+ *   handleLogout:  () => Promise<void>,
+ *   handleAuthFailure: () => void,
+ * }}
  */
 export function useAuth() {
   const [authenticated, setAuthenticated] = useState(false);

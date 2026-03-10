@@ -1,6 +1,23 @@
 """
 main.py — Thin CLI entry point.
 
+Entry-point design
+------------------
+main.py is intentionally thin: it parses argv and delegates to sub-modules.
+Two real entry points exist for this project:
+
+  1. CLI (training / evaluation / batch inference):
+       python main.py <command>  [options]
+     Each command maps to a function in ``src/cli/`` or a top-level
+     ``src/*.py`` module (train.py, evaluate.py, hpo.py, …).
+
+  2. API server (online inference + dashboard):
+       uvicorn src.api:app --host 0.0.0.0 --port 8000
+     or via the convenience wrapper:
+       python main.py serve-api
+     The FastAPI app is defined in ``src/api.py``; its lifespan startup /
+     shutdown logic lives in ``src/api_lifespan.py``.
+
 All command implementations live in src/cli/ submodules.
 ML utilities: src/train.py, src/evaluate.py, src/hpo.py, src/explain.py.
 Experiment tracking: src/experiment_tracking.py.

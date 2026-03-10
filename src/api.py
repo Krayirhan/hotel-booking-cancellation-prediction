@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-from contextlib import asynccontextmanager
 import hmac
 import os
 import time
@@ -25,12 +24,10 @@ from .api_shared import (
     load_serving_state,
     error_response,
 )
+from .api_lifespan import lifespan, _build_runtime_rate_limiter
 from .config import ExperimentConfig
-from .db_bootstrap import ensure_required_tables, run_migrations
-from .dashboard import init_dashboard_store, router_dashboard
+from .dashboard import router_dashboard
 from .dashboard_auth import router_dashboard_auth
-from .user_store import init_user_store, seed_admin
-from .guest_store import init_guest_store
 from .guests import router_guests
 from .chat import router_chat
 from .metrics import (
@@ -38,11 +35,6 @@ from .metrics import (
     REQUEST_COUNT,
     REQUEST_LATENCY,
     render_metrics,
-)
-from .rate_limit import BaseRateLimiter, build_rate_limiter
-from .tracing import (
-    init_tracing,
-    instrument_fastapi,
 )
 from .utils import get_logger
 
@@ -63,108 +55,8 @@ def _expected_admin_key() -> str | None:
     return os.getenv("DS_ADMIN_KEY")
 
 
-def _build_runtime_rate_limiter() -> BaseRateLimiter:
-    cfg = ExperimentConfig().api
-    env_backend = os.getenv("RATE_LIMIT_BACKEND")
-    env_redis_url = os.getenv("REDIS_URL")
-    env_key_prefix = os.getenv("RATE_LIMIT_REDIS_KEY_PREFIX")
-    return build_rate_limiter(
-        backend=env_backend or cfg.rate_limit_backend,
-        redis_url=env_redis_url or cfg.redis_url,
-        key_prefix=env_key_prefix or cfg.redis_key_prefix,
-    )
-
-
 def _load_serving_state() -> ServingState:
     return load_serving_state()
-
-
-async def _periodic_chat_cleanup(interval_seconds: int = 300) -> None:
-    """Background task: evict idle chat sessions every 5 minutes (#29)."""
-    while True:
-        try:
-            await asyncio.sleep(interval_seconds)
-            from .chat.memory import get_session_store
-
-            store = get_session_store()
-            if hasattr(store, "_cleanup_expired"):
-                store._cleanup_expired()
-                logger.debug("Periodic chat session cleanup ran")
-        except asyncio.CancelledError:
-            break
-        except Exception as exc:
-            logger.warning("Periodic chat cleanup error: %s", exc)
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    init_tracing(service_name="ds-project-api")
-    instrument_fastapi(app)
-    # ── Database init ────────────────────────────────────────────────────────
-    database_url = os.getenv("DATABASE_URL", "sqlite:///./reports/dashboard.db")
-    run_migrations(database_url)
-    ensure_required_tables(database_url)
-
-    init_user_store(database_url)
-    seed_admin()
-
-    from sqlalchemy import create_engine as _create_engine
-
-    _engine = _create_engine(database_url, pool_pre_ping=True, future=True)
-    init_guest_store(_engine)
-    try:
-        from .chat.knowledge.db_store import init_knowledge_db_store
-
-        init_knowledge_db_store(_engine)
-    except Exception as exc:
-        logger.warning(
-            "Could not initialize knowledge DB store (pgvector): %s — using TF-IDF fallback",
-            exc,
-        )
-    init_dashboard_store()
-    try:
-        app.state.serving = _load_serving_state()
-    except Exception as exc:
-        logger.warning("Could not load serving state: %s — API starts degraded", exc)
-        app.state.serving = None
-    app.state.rate_limiter = _build_runtime_rate_limiter()
-    app.state.shutting_down = False
-    app.state._reload_lock = asyncio.Lock()
-
-    # Multi-worker rate limit uyarısı
-    workers = int(os.getenv("WEB_CONCURRENCY", os.getenv("UVICORN_WORKERS", "1")))
-    rate_backend = (
-        (os.getenv("RATE_LIMIT_BACKEND") or ExperimentConfig().api.rate_limit_backend)
-        .strip()
-        .lower()
-    )
-    if workers > 1 and rate_backend == "memory":
-        logger.warning(
-            "RATE LIMIT UYARISI: %d worker algılandı ancak rate_limit_backend='memory'. "
-            "Her worker kendi bellek bucket'ını tutar; gerçek sınır %d/dk katına çıkabilir. "
-            "Dağıtık doğru limitler için RATE_LIMIT_BACKEND=redis kullanın.",
-            workers,
-            ExperimentConfig().api.rate_limit_per_minute * workers,
-        )
-
-    _cleanup_task = asyncio.create_task(_periodic_chat_cleanup())
-
-    yield
-
-    # Graceful shutdown
-    _cleanup_task.cancel()
-    try:
-        await _cleanup_task
-    except asyncio.CancelledError:
-        pass
-    # Close Ollama persistent connection pool (#28)
-    try:
-        from .chat.ollama_client import get_ollama_client
-
-        await get_ollama_client().aclose()
-    except Exception:  # nosec B110 — best-effort teardown; Ollama client may already be closed
-        pass
-    app.state.shutting_down = True
 
 
 app = FastAPI(

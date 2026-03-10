@@ -8,9 +8,16 @@ import { getSystemStatus } from '../api';
  *
  * AbortController ile sayfa değişiminde inflight istek otomatik olarak iptal edilir.
  *
- * @param {object} opts
+ * @param {object}   [opts={}]
  * @param {string}   opts.apiKey        - API anahtarı (VITE_DEFAULT_API_KEY varsayılan)
  * @param {function} opts.onAuthFailed  - 401 durumunda çağrılır
+ *
+ * @returns {{
+ *   status:  {overall: string, generated_at: string, services: object}|null,
+ *   loading: boolean,
+ *   error:   string,
+ *   refresh: () => Promise<void>,
+ * }}
  */
 export function useSystemStatus({ apiKey, onAuthFailed } = {}) {
   const [status, setStatus]   = useState(null);

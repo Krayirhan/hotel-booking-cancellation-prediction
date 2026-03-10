@@ -1,8 +1,16 @@
 from __future__ import annotations
 
+import base64
+import binascii
 import datetime
+import hashlib
+import hmac
+import io
 import json
 import logging
+import os
+import re
+import uuid
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
@@ -363,6 +371,20 @@ class KnowledgeChunkUpdateRequest(BaseModel):
     is_active: bool | None = None
 
 
+class KnowledgeIngestRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_name: str = Field(default="manual-entry", min_length=3, max_length=80)
+    source_type: str = Field(default="text", pattern="^(text|pdf)$")
+    content: str | None = Field(default=None)
+    content_base64: str | None = Field(default=None)
+    category: str = Field(default="general", max_length=50)
+    tags: list[str] = Field(default_factory=list)
+    priority: int = Field(default=5, ge=1, le=10)
+    chunk_size: int = Field(default=900, ge=200, le=4000)
+    chunk_overlap: int = Field(default=100, ge=0, le=1000)
+
+
 def _require_db_store():
     from .knowledge.db_store import get_knowledge_db_store
 
@@ -375,17 +397,180 @@ def _require_db_store():
     return db
 
 
+def _require_admin_key(request: Request) -> None:
+    expected_admin = os.getenv("DS_ADMIN_KEY")
+    if expected_admin and not hmac.compare_digest(
+        request.headers.get("x-admin-key") or "", expected_admin
+    ):
+        raise HTTPException(status_code=403, detail="x-admin-key header gereklidir.")
+
+
+def _chunk_text(content: str, *, chunk_size: int, chunk_overlap: int) -> list[str]:
+    normalized = re.sub(r"\r\n?", "\n", content).strip()
+    normalized = re.sub(r"\n{3,}", "\n\n", normalized)
+    if not normalized:
+        return []
+
+    step = max(1, chunk_size - chunk_overlap)
+    chunks: list[str] = []
+    start = 0
+    text_len = len(normalized)
+
+    while start < text_len:
+        end = min(text_len, start + chunk_size)
+        chunk = normalized[start:end].strip()
+        if chunk:
+            chunks.append(chunk)
+        if end >= text_len:
+            break
+        start += step
+
+    return chunks
+
+
+def _extract_pdf_text(content_bytes: bytes) -> str:
+    try:
+        from pypdf import PdfReader  # type: ignore[import-not-found]
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "PDF parse icin pypdf gerekli. pypdf yoksa source_type='text' "
+                "ile cikarilmis metni gonderin."
+            ),
+        ) from exc
+
+    try:
+        reader = PdfReader(io.BytesIO(content_bytes))
+        pages = [(page.extract_text() or "").strip() for page in reader.pages]
+        text = "\n\n".join(p for p in pages if p)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"PDF parse hatasi: {exc}") from exc
+
+    if not text.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="PDF iceriginden metin cikarilamadi.",
+        )
+    return text
+
+
+def _make_chunk_id(source_name: str, index: int) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", source_name.lower()).strip("-")[:24] or "kb"
+    salt = hashlib.sha1(uuid.uuid4().hex.encode("utf-8")).hexdigest()[:8]
+    return f"{slug}-{index:03d}-{salt}"
+
+
+@router_chat.post("/knowledge", status_code=201, summary="Knowledge ingest endpoint")
+async def ingest_knowledge(body: KnowledgeIngestRequest, request: Request) -> dict:
+    """Ingest text/PDF content, chunk it, embed, and persist to pgvector store."""
+    _require_admin_key(request)
+    db = _require_db_store()
+
+    if body.chunk_overlap >= body.chunk_size:
+        raise HTTPException(
+            status_code=400,
+            detail="chunk_overlap, chunk_size degerinden kucuk olmalidir.",
+        )
+
+    if body.source_type == "pdf":
+        if not body.content_base64:
+            raise HTTPException(
+                status_code=400,
+                detail="PDF ingest icin content_base64 zorunludur.",
+            )
+        try:
+            raw_pdf = base64.b64decode(body.content_base64, validate=True)
+        except (binascii.Error, ValueError) as exc:
+            raise HTTPException(status_code=400, detail="content_base64 gecersiz.") from exc
+        source_text = _extract_pdf_text(raw_pdf)
+    else:
+        source_text = (body.content or "").strip()
+
+    if len(source_text) < 20:
+        raise HTTPException(
+            status_code=400,
+            detail="Ingest edilecek metin en az 20 karakter olmalidir.",
+        )
+
+    chunks = _chunk_text(
+        source_text,
+        chunk_size=body.chunk_size,
+        chunk_overlap=body.chunk_overlap,
+    )
+    if not chunks:
+        raise HTTPException(status_code=400, detail="Chunk olusturulamadi.")
+
+    created_ids: list[str] = []
+    failures: list[str] = []
+    for idx, chunk in enumerate(chunks, start=1):
+        chunk_id = _make_chunk_id(body.source_name, idx)
+        title = f"{body.source_name} [{idx}/{len(chunks)}]"
+        try:
+            db.create_chunk(
+                chunk_id=chunk_id,
+                category=body.category,
+                tags=body.tags,
+                title=title,
+                content=chunk,
+                priority=body.priority,
+            )
+            created_ids.append(chunk_id)
+        except Exception as exc:
+            failures.append(str(exc))
+
+    if not created_ids:
+        detail = failures[0] if failures else "Knowledge chunk kaydi basarisiz."
+        raise HTTPException(status_code=400, detail=detail)
+
+    return {
+        "source_name": body.source_name,
+        "source_type": body.source_type,
+        "chunks_created": len(created_ids),
+        "chunks_failed": len(failures),
+        "chunk_ids": created_ids[:25],
+    }
+
+
+@router_chat.get("/knowledge/stats", summary="Knowledge base stats")
+async def knowledge_stats(request: Request) -> dict:
+    _require_admin_key(request)
+    rows = _require_db_store().list_chunks(include_inactive=True)
+    total = len(rows)
+    active = sum(1 for row in rows if bool(row.get("is_active")))
+    embedded = sum(1 for row in rows if bool(row.get("has_embedding")))
+
+    categories: dict[str, int] = {}
+    for row in rows:
+        category = str(row.get("category") or "uncategorized")
+        categories[category] = categories.get(category, 0) + 1
+
+    return {
+        "total_chunks": total,
+        "active_chunks": active,
+        "inactive_chunks": total - active,
+        "embedded_chunks": embedded,
+        "categories": categories,
+    }
+
+
 @router_chat.get("/admin/knowledge", summary="Tüm knowledge chunk'larını listele")
-async def list_knowledge_chunks(include_inactive: bool = False) -> list[dict]:
+async def list_knowledge_chunks(
+    request: Request, include_inactive: bool = False
+) -> list[dict]:
     """Knowledge tabanındaki tüm chunk'ları döner (admin)."""
+    _require_admin_key(request)
     return _require_db_store().list_chunks(include_inactive=include_inactive)
 
 
 @router_chat.post(
     "/admin/knowledge", status_code=201, summary="Yeni knowledge chunk ekle"
 )
-async def create_knowledge_chunk(body: KnowledgeChunkCreateRequest) -> dict:
+async def create_knowledge_chunk(
+    body: KnowledgeChunkCreateRequest, request: Request
+) -> dict:
     """Yeni bir knowledge chunk oluşturur ve otomatik olarak embed eder."""
+    _require_admin_key(request)
     db = _require_db_store()
     try:
         return db.create_chunk(
@@ -402,9 +587,10 @@ async def create_knowledge_chunk(body: KnowledgeChunkCreateRequest) -> dict:
 
 @router_chat.put("/admin/knowledge/{chunk_id}", summary="Knowledge chunk güncelle")
 async def update_knowledge_chunk(
-    chunk_id: str, body: KnowledgeChunkUpdateRequest
+    chunk_id: str, body: KnowledgeChunkUpdateRequest, request: Request
 ) -> dict:
     """Bir chunk'ı günceller. İçerik değişirse otomatik re-embed yapar."""
+    _require_admin_key(request)
     db = _require_db_store()
     updates = body.model_dump(exclude_none=True)
     ok = db.update_chunk(chunk_id=chunk_id, **updates)
@@ -414,8 +600,11 @@ async def update_knowledge_chunk(
 
 
 @router_chat.delete("/admin/knowledge/{chunk_id}", summary="Knowledge chunk sil")
-async def delete_knowledge_chunk(chunk_id: str, hard: bool = False) -> dict:
+async def delete_knowledge_chunk(
+    chunk_id: str, request: Request, hard: bool = False
+) -> dict:
     """Chunk'ı devre dışı bırakır (soft delete) veya kalıcı siler (hard=true)."""
+    _require_admin_key(request)
     db = _require_db_store()
     ok = db.delete_chunk(chunk_id=chunk_id, hard_delete=hard)
     if not ok:
@@ -428,8 +617,9 @@ async def delete_knowledge_chunk(chunk_id: str, hard: bool = False) -> dict:
     "/admin/knowledge/rebuild-embeddings",
     summary="Tüm chunk embedding'lerini yeniden oluştur",
 )
-async def rebuild_knowledge_embeddings() -> dict:
+async def rebuild_knowledge_embeddings(request: Request) -> dict:
     """Tüm aktif chunk'ları sıfırdan embed eder. Model değişikliği sonrası kullanın."""
+    _require_admin_key(request)
     db = _require_db_store()
     loop = __import__("asyncio").get_running_loop()
     result = await loop.run_in_executor(None, db.rebuild_embeddings)

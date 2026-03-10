@@ -1,1 +1,14 @@
+# requirements.txt — Developer install (dev + prod combined)
+#
+# Layout:
+#   requirements-prod.txt  — production runtime dependencies only (used in Dockerfile)
+#   requirements-dev.txt   — additional dev/test tools (linters, type checkers, test runners)
+#   requirements.txt       — this file; pulls in prod via -r requirements-prod.txt
+#
+# Install for local development:
+#   pip install -r requirements.txt      (prod deps only)
+#   pip install -r requirements-dev.txt  (dev tools on top)
+#
+# pyproject.toml reads requirements-prod.txt for `pip install -e .` (dynamic deps).
+
 -r requirements-prod.txt

@@ -209,7 +209,7 @@ def seed_admin() -> None:
     Called once at API startup. Reads the password from env:
       DASHBOARD_ADMIN_PASSWORD_ADMIN  → password for 'admin'
 
-    If not set, defaults to 'admin123' (change immediately!).
+    If not set, seeding is skipped to avoid insecure defaults.
     """
     store = get_user_store()
     if store is None:
@@ -219,11 +219,11 @@ def seed_admin() -> None:
     explicit_admin_pass = os.getenv("DASHBOARD_ADMIN_PASSWORD_ADMIN", "").strip()
     admin_pass = explicit_admin_pass
     if not admin_pass:
-        admin_pass = "admin123"
         logger.warning(
-            "DASHBOARD_ADMIN_PASSWORD_ADMIN not set. "
-            "Seeding 'admin' with default password 'admin123'. Change this immediately!"
+            "DASHBOARD_ADMIN_PASSWORD_ADMIN is not set. "
+            "Skipping automatic admin seed to avoid insecure default credentials."
         )
+        return
 
     admin_user = store.get_user("admin")
     if admin_user is None:

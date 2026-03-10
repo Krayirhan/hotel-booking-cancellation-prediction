@@ -8,7 +8,13 @@ import ModelsPage from './components/ModelsPage';
 import PipelinePage from './components/PipelinePage';
 import RunsPage from './components/RunsPage';
 import ChatPage from './components/ChatPage';
+import GuestPage from './components/GuestPage';
 import SystemPage from './components/SystemPage';
+import ErrorBoundary from './components/ErrorBoundary';
+
+function withRouteBoundary(element) {
+  return <ErrorBoundary>{element}</ErrorBoundary>;
+}
 
 /**
  * App — Kök bileşen
@@ -42,13 +48,13 @@ export default function App() {
   return (
     <Routes>
       <Route element={<Layout auth={auth} theme={theme} />}>
-        <Route index element={<OverviewPage />} />
-        <Route path="models"   element={<ModelsPage />} />
-        <Route path="pipeline" element={<PipelinePage />} />
-        <Route path="runs"     element={<RunsPage />} />
-        <Route path="chat"     element={<ChatPage />} />
-        <Route path="guests"   element={<Navigate to="/chat" replace />} />
-        <Route path="system"   element={<SystemPage />} />
+        <Route index element={withRouteBoundary(<OverviewPage />)} />
+        <Route path="models"   element={withRouteBoundary(<ModelsPage />)} />
+        <Route path="pipeline" element={withRouteBoundary(<PipelinePage />)} />
+        <Route path="runs"     element={withRouteBoundary(<RunsPage />)} />
+        <Route path="chat"     element={withRouteBoundary(<ChatPage />)} />
+        <Route path="guests"   element={withRouteBoundary(<GuestPage />)} />
+        <Route path="system"   element={withRouteBoundary(<SystemPage />)} />
         <Route path="*"        element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

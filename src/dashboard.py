@@ -11,140 +11,75 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from .config import Paths
 from .dashboard_auth import require_dashboard_user
+from .dashboard_store import DashboardStore, SQLALCHEMY_AVAILABLE
 from .utils import get_logger
 
 logger = get_logger("dashboard")
 
-try:
-    from sqlalchemy import (
-        Column,
-        DateTime,
-        Float,
-        Integer,
-        MetaData,
-        String,
-        Table,
-        create_engine,
-        delete,
-        insert,
-        select,
-    )
+# ── Redis cache (optional — graceful degradation when Redis is unavailable) ───
 
-    SQLALCHEMY_AVAILABLE = True
-except Exception:
-    SQLALCHEMY_AVAILABLE = False
+_CACHE_TTL_SECONDS = int(os.getenv("DASHBOARD_CACHE_TTL_SECONDS", "45"))
+_CACHE_PREFIX = "ds:dash:overview:"
+_dashboard_redis: Any = None
 
+
+def _get_dashboard_redis() -> Any | None:
+    """Lazily connect to Redis for dashboard caching. Returns None on failure."""
+    global _dashboard_redis
+    if _dashboard_redis is not None:
+        return _dashboard_redis
+    redis_url = os.getenv("REDIS_URL")
+    if not redis_url:
+        return None
+    try:
+        import redis as _redis  # type: ignore[import]
+
+        client = _redis.Redis.from_url(redis_url, decode_responses=True, socket_timeout=2)
+        client.ping()
+        _dashboard_redis = client
+        logger.info("Dashboard cache: Redis active (TTL=%ds)", _CACHE_TTL_SECONDS)
+        return _dashboard_redis
+    except Exception as exc:
+        logger.debug("Dashboard cache: Redis unavailable, no caching. reason=%s", exc)
+        return None
+
+
+def _cache_get(key: str) -> Dict[str, Any] | None:
+    r = _get_dashboard_redis()
+    if r is None:
+        return None
+    try:
+        raw = r.get(key)
+        return json.loads(raw) if raw else None
+    except Exception:
+        return None
+
+
+def _cache_set(key: str, value: Dict[str, Any]) -> None:
+    r = _get_dashboard_redis()
+    if r is None:
+        return
+    try:
+        r.setex(key, _CACHE_TTL_SECONDS, json.dumps(value, default=str))
+    except Exception as exc:
+        logger.debug("Dashboard cache write failed: %s", exc)
+
+
+def _cache_invalidate(pattern: str = f"{_CACHE_PREFIX}*") -> None:
+    """Invalidate all dashboard overview cache keys (used on reload)."""
+    r = _get_dashboard_redis()
+    if r is None:
+        return
+    try:
+        keys = r.keys(pattern)
+        if keys:
+            r.delete(*keys)
+    except Exception as exc:
+        logger.debug("Dashboard cache invalidation failed: %s", exc)
 
 router_dashboard = APIRouter(prefix="/dashboard/api", tags=["dashboard"])
 
 _store = None
-
-
-class DashboardStore:
-    def __init__(self, database_url: str):
-        if not SQLALCHEMY_AVAILABLE:
-            raise RuntimeError("SQLAlchemy is not available")
-
-        self.database_url = database_url
-        self.engine = create_engine(database_url, pool_pre_ping=True, future=True)
-        self.metadata = MetaData()
-
-        self.runs = Table(
-            "experiment_runs",
-            self.metadata,
-            Column("run_id", String(64), primary_key=True),
-            Column("selected_model", String(256), nullable=True),
-            Column("threshold", Float, nullable=True),
-            Column("expected_net_profit", Float, nullable=True),
-            Column("max_action_rate", Float, nullable=True),
-            Column("source_path", String(1024), nullable=True),
-            Column("updated_at", DateTime(timezone=True), nullable=False),
-        )
-
-        self.model_metrics = Table(
-            "model_metrics",
-            self.metadata,
-            Column("id", Integer, primary_key=True, autoincrement=True),
-            Column("run_id", String(64), nullable=False),
-            Column("model_name", String(256), nullable=False),
-            Column("train_cv_roc_auc_mean", Float, nullable=True),
-            Column("train_cv_roc_auc_std", Float, nullable=True),
-            Column("test_roc_auc", Float, nullable=True),
-            Column("test_f1", Float, nullable=True),
-            Column("test_precision", Float, nullable=True),
-            Column("test_recall", Float, nullable=True),
-            Column("test_threshold", Float, nullable=True),
-            Column("n_test", Integer, nullable=True),
-            Column("positive_rate_test", Float, nullable=True),
-            Column("updated_at", DateTime(timezone=True), nullable=False),
-        )
-
-    def create_schema(self) -> None:
-        self.metadata.create_all(self.engine)
-
-    def upsert_snapshot(self, snapshot: Dict[str, Any]) -> None:
-        run_id = snapshot["run_id"]
-        champion = snapshot.get("champion") or {}
-        now = datetime.now(timezone.utc)
-
-        with self.engine.begin() as conn:
-            conn.execute(
-                delete(self.model_metrics).where(self.model_metrics.c.run_id == run_id)
-            )
-            conn.execute(delete(self.runs).where(self.runs.c.run_id == run_id))
-
-            conn.execute(
-                insert(self.runs).values(
-                    run_id=run_id,
-                    selected_model=champion.get("selected_model"),
-                    threshold=champion.get("threshold"),
-                    expected_net_profit=champion.get("expected_net_profit"),
-                    max_action_rate=champion.get("max_action_rate"),
-                    source_path=snapshot.get("source_path"),
-                    updated_at=now,
-                )
-            )
-
-            for row in snapshot.get("models", []):
-                conn.execute(
-                    insert(self.model_metrics).values(
-                        run_id=run_id,
-                        model_name=row.get("model_name"),
-                        train_cv_roc_auc_mean=row.get("train_cv_roc_auc_mean"),
-                        train_cv_roc_auc_std=row.get("train_cv_roc_auc_std"),
-                        test_roc_auc=row.get("test_roc_auc"),
-                        test_f1=row.get("test_f1"),
-                        test_precision=row.get("test_precision"),
-                        test_recall=row.get("test_recall"),
-                        test_threshold=row.get("test_threshold"),
-                        n_test=row.get("n_test"),
-                        positive_rate_test=row.get("positive_rate_test"),
-                        updated_at=now,
-                    )
-                )
-
-    def list_runs(self, limit: int = 20) -> List[Dict[str, Any]]:
-        with self.engine.begin() as conn:
-            stmt = (
-                select(self.runs).order_by(self.runs.c.updated_at.desc()).limit(limit)
-            )
-            rows = conn.execute(stmt).mappings().all()
-
-        out: List[Dict[str, Any]] = []
-        for row in rows:
-            out.append(
-                {
-                    "run_id": row["run_id"],
-                    "selected_model": row["selected_model"],
-                    "threshold": row["threshold"],
-                    "expected_net_profit": row["expected_net_profit"],
-                    "max_action_rate": row["max_action_rate"],
-                    "updated_at": (
-                        row["updated_at"].isoformat() if row["updated_at"] else None
-                    ),
-                }
-            )
-        return out
 
 
 def _read_json(path: Path, default: Any) -> Any:
@@ -277,10 +212,24 @@ def dashboard_overview(
     run_id: str | None = Query(default=None),
     _user: Dict[str, Any] = Depends(require_dashboard_user),
 ):
+    """Return overview snapshot for the given run (or latest).
+
+    Results are Redis-cached for ``DASHBOARD_CACHE_TTL_SECONDS`` (default 45 s)
+    to avoid repeated filesystem scans on refresh-heavy dashboards.
+    The cache is keyed on run_id so different runs are cached independently.
+    """
+    cache_key = f"{_CACHE_PREFIX}{run_id or 'latest'}"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        cached["cache_hit"] = True
+        return cached
+
     paths = Paths()
     snapshot = _load_snapshot(paths=paths, run_id=run_id)
     _persist_snapshot(snapshot)
     snapshot["db_enabled"] = _store is not None
+    snapshot["cache_hit"] = False
+    _cache_set(cache_key, snapshot)
     return snapshot
 
 

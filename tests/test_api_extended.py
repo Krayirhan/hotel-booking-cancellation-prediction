@@ -263,6 +263,19 @@ def test_reload_serving_state_admin_and_failure_paths(monkeypatch):
     assert "Reload failed" in str(ex2.value.detail)
 
 
+def test_validate_admin_key_startup_enforces_non_dev(monkeypatch):
+    monkeypatch.setenv("DS_ENV", "production")
+    monkeypatch.delenv("DS_ADMIN_KEY", raising=False)
+    with pytest.raises(RuntimeError, match="DS_ADMIN_KEY must be set"):
+        api._validate_admin_key_startup()
+
+
+def test_validate_admin_key_startup_allows_dev_without_key(monkeypatch):
+    monkeypatch.setenv("DS_ENV", "development")
+    monkeypatch.delenv("DS_ADMIN_KEY", raising=False)
+    api._validate_admin_key_startup()
+
+
 def test_exception_handlers_return_structured_error():
     req = _make_request(path="/x")
     req.state.request_id = "rid-123"

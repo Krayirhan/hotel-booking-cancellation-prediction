@@ -1,4 +1,4 @@
-.PHONY: setup setup-env check hooks lint test test-cov train evaluate predict monitor serve hpo explain load-locust dev-up dev-down helm-lint helm-template
+.PHONY: setup setup-env check hooks lint test test-cov train evaluate predict monitor serve hpo explain load-locust load-k6 dev-up dev-down helm-lint helm-template
 
 # ── İlk kurulum (yeni PC) ───────────────────────────────────────────────────
 
@@ -45,6 +45,10 @@ serve:
 
 load-locust:
 	.venv\\Scripts\\python.exe -m locust -f perf/locustfile.py --host http://127.0.0.1:8000
+
+## k6 smoke load test (requires k6 installed: https://k6.io)
+load-k6:
+	k6 run perf/k6_smoke.js
 
 hpo:
 	.venv\\Scripts\\python.exe main.py hpo --n-trials 50
