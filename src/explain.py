@@ -109,8 +109,7 @@ def _aggregate_shap_to_original(
 
         for orig in sorted_originals:
             if any(
-                name == orig or name.startswith(f"{orig}_")
-                for name in normalized_names
+                name == orig or name.startswith(f"{orig}_") for name in normalized_names
             ):
                 result[orig] += shap_values[:, i]
                 matched = True

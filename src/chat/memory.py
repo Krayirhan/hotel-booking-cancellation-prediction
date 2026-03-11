@@ -8,6 +8,10 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..utils import get_logger
+
+logger = get_logger("chat.memory")
+
 
 @dataclass
 class Message:
@@ -229,14 +233,10 @@ def get_session_store() -> SessionStore | RedisSessionStore:
             client.ping()
             ttl = int(os.getenv("CHAT_SESSION_TTL_SECONDS", "3600"))
             _store = RedisSessionStore(client, ttl_seconds=ttl)
-            import logging
-
-            logging.getLogger(__name__).info("Chat session store: Redis backend active")
+            logger.info("Chat session store: Redis backend active")
             return _store
         except Exception as exc:
-            import logging
-
-            logging.getLogger(__name__).warning(
+            logger.warning(
                 "Chat session store: Redis unavailable, using in-memory. reason=%s", exc
             )
     _store = SessionStore()

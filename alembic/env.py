@@ -80,7 +80,9 @@ try:
         Column("n_test", Integer, nullable=True),
         Column("positive_rate_test", Float, nullable=True),
         Column("updated_at", DateTime(timezone=True), nullable=False),
-        ForeignKeyConstraint(["run_id"], ["experiment_runs.run_id"], ondelete="CASCADE"),
+        ForeignKeyConstraint(
+            ["run_id"], ["experiment_runs.run_id"], ondelete="CASCADE"
+        ),
     )
     Index("ix_model_metrics_run_id", model_metrics.c.run_id)
 
@@ -114,7 +116,9 @@ try:
         Column("hotel", String(50), nullable=False, server_default="City Hotel"),
         Column("lead_time", Integer, nullable=False, server_default="0"),
         Column("deposit_type", String(30), nullable=False, server_default="No Deposit"),
-        Column("market_segment", String(30), nullable=False, server_default="Online TA"),
+        Column(
+            "market_segment", String(30), nullable=False, server_default="Online TA"
+        ),
         Column("adults", Integer, nullable=False, server_default="2"),
         Column("children", Integer, nullable=False, server_default="0"),
         Column("babies", Integer, nullable=False, server_default="0"),

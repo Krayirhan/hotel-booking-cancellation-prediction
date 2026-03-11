@@ -19,7 +19,6 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
-import logging
 import os
 from collections import deque
 from datetime import datetime, timezone
@@ -54,8 +53,9 @@ from src.metrics import (
     KNOWLEDGE_RETRIEVAL_QUALITY_TOTAL,
     KNOWLEDGE_SIMILARITY_SCORE,
 )
+from src.utils import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger("chat.knowledge.db_store")
 
 EMBED_DIM = 768  # nomic-embed-text output dimension
 _RETRIEVAL_WINDOW_SIZE = int(os.getenv("CHAT_KB_RETRIEVAL_WINDOW", "200"))

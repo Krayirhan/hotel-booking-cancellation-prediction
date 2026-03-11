@@ -7,7 +7,6 @@ import hashlib
 import hmac
 import io
 import json
-import logging
 import os
 import re
 import time
@@ -21,8 +20,9 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from .ollama_client import get_ollama_client
 from .orchestrator import get_orchestrator
+from ..utils import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger("chat.router")
 
 router_chat = APIRouter(prefix="/chat", tags=["chat"])
 

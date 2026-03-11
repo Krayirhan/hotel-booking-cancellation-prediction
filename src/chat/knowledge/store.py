@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from typing import Any
 
 from .policies import KNOWLEDGE_BASE, KnowledgeChunk
+from ...utils import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger("chat.knowledge.store")
 
 
 class KnowledgeStore:

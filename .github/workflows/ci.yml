@@ -136,17 +136,44 @@ jobs:
             src/api_v1.py \
             src/api_v2.py \
             src/api_shared.py \
-            src/dashboard_store.py \
+            src/calibration.py \
+            src/config.py \
+            src/cost_matrix.py \
+            src/dashboard.py \
             src/dashboard_auth.py \
-            src/rate_limit.py \
+            src/dashboard_store.py \
+            src/db_bootstrap.py \
+            src/evaluate.py \
+            src/experiment_tracking.py \
+            src/features.py \
+            src/guest_store.py \
+            src/guests.py \
+            src/io.py \
+            src/metrics.py \
             src/monitoring.py \
             src/policy.py \
-            src/data_validation.py \
-            src/db_bootstrap.py \
-            src/metrics.py \
-            src/cli/train.py \
+            src/predict.py \
+            src/preprocess.py \
+            src/rate_limit.py \
+            src/split.py \
+            src/train.py \
+            src/tracing.py \
             src/user_store.py \
-            src/guest_store.py \
+            src/utils.py \
+            src/validate.py \
+            src/validation/__init__.py \
+            src/validation/anomaly.py \
+            src/validation/drift.py \
+            src/validation/schema.py \
+            src/chat/memory.py \
+            src/chat/router.py \
+            src/chat/orchestrator.py \
+            src/chat/ollama_client.py \
+            src/chat/knowledge/db_store.py \
+            src/chat/knowledge/store.py \
+            src/cli/train.py \
+            src/cli/evaluate.py \
+            src/cli/monitor.py \
             scripts/evaluate_rollback.py \
             | tee reports/mypy.txt
 

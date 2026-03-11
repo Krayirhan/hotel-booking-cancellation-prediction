@@ -4,8 +4,10 @@ stages:
     deps:
       - data/raw/hotel_bookings.csv
       - src/preprocess.py
-      - src/validate.py
-      - src/data_validation.py
+      - src/validation/__init__.py
+      - src/validation/schema.py
+      - src/validation/drift.py
+      - src/validation/anomaly.py
       - src/io.py
       - main.py
     outs:

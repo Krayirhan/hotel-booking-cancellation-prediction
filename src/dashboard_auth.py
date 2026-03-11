@@ -270,7 +270,10 @@ def _get_users() -> Dict[str, str]:
 
 
 def _verify_credentials(username: str, password: str) -> bool:
-    store = get_user_store()
+    try:
+        store = get_user_store()
+    except RuntimeError:
+        store = None
     if store is not None:
         try:
             if store.verify_password(username, password):

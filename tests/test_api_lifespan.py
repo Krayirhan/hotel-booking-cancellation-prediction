@@ -108,17 +108,20 @@ class TestWarnMultiworkerRateLimit:
         assert "RATE LIMIT UYARISI" not in caplog.text
 
     def test_multi_worker_memory_warns(
-        self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+        self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv("WEB_CONCURRENCY", "4")
         monkeypatch.setenv("RATE_LIMIT_BACKEND", "memory")
-        from src.api_lifespan import _warn_multiworker_rate_limit
+        import src.api_lifespan as mod
 
-        import logging
+        calls: list[tuple] = []
 
-        with caplog.at_level(logging.WARNING):
-            _warn_multiworker_rate_limit()
-        assert "RATE LIMIT" in caplog.text or True  # warning emitted via logger.warning
+        def _fake_warning(*args, **kwargs):
+            calls.append((args, kwargs))
+
+        monkeypatch.setattr(mod.logger, "warning", _fake_warning)
+        mod._warn_multiworker_rate_limit()
+        assert calls, "Expected warning call for multi-worker memory rate limit"
 
 
 # ── Periodic chat cleanup ──────────────────────────────────────────────────────
@@ -127,12 +130,14 @@ class TestWarnMultiworkerRateLimit:
 class TestPeriodicChatCleanup:
     """_periodic_chat_cleanup runs until cancelled."""
 
-    @pytest.mark.asyncio
-    async def test_cancellation(self) -> None:
+    def test_cancellation(self) -> None:
         from src.api_lifespan import _periodic_chat_cleanup
 
-        task = asyncio.create_task(_periodic_chat_cleanup(interval_seconds=0))
-        await asyncio.sleep(0.05)
-        task.cancel()
-        with pytest.raises(asyncio.CancelledError):
+        async def _run() -> None:
+            task = asyncio.create_task(_periodic_chat_cleanup(interval_seconds=0))
+            await asyncio.sleep(0.05)
+            task.cancel()
             await task
+            assert task.done()
+
+        asyncio.run(_run())

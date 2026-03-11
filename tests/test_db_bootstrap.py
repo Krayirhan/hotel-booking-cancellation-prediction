@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import patch
-
 import pytest
 
 from src.db_bootstrap import (
@@ -28,23 +26,20 @@ class TestRunMigrations:
     def test_missing_alembic_ini_raises(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # Point to a non-existent project root
-        fake_src = tmp_path / "src"
-        fake_src.mkdir()
-        fake_module = fake_src / "db_bootstrap.py"
-        fake_module.touch()
+        """run_migrations raises RuntimeError when alembic.ini is absent."""
+        import src.db_bootstrap as mod
 
-        with patch("src.db_bootstrap.Path") as mock_path:
-            # Make Path(__file__).resolve().parent.parent point to tmp_path
-            mock_path.return_value.resolve.return_value.parent.parent = tmp_path
-            mock_alembic_ini = tmp_path / "alembic.ini"
-            # Ensure alembic.ini does NOT exist
-            if mock_alembic_ini.exists():
-                mock_alembic_ini.unlink()
+        db_url = f"sqlite:///{(tmp_path / 'test.db').as_posix()}"
+        # Point db_bootstrap's __file__ to a fake path under tmp_path so that
+        # Path(__file__).resolve().parent.parent resolves to tmp_path, where
+        # no alembic.ini exists.
+        fake_file = tmp_path / "src" / "db_bootstrap.py"
+        fake_file.parent.mkdir(parents=True, exist_ok=True)
+        fake_file.touch()
+        monkeypatch.setattr(mod, "__file__", str(fake_file))
 
-            # The function uses Path(__file__) internally so we need a different approach
-            # Just verify the function works with the real alembic.ini
-            pass
+        with pytest.raises(RuntimeError, match="Alembic config missing"):
+            run_migrations(db_url)
 
 
 class TestEnsureRequiredTables:

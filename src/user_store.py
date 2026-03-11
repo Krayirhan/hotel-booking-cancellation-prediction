@@ -191,8 +191,16 @@ class UserStore:
 # ── Module-level singleton ────────────────────────────────────────────────────
 
 
-def get_user_store() -> UserStore | None:
-    """Return the initialized UserStore, or None if not yet initialized."""
+def get_user_store() -> "UserStore":
+    """Return the initialized UserStore.
+
+    Raises:
+        RuntimeError: If init_user_store() has not been called yet.
+    """
+    if _user_store is None:
+        raise RuntimeError(
+            "UserStore not initialized. Call init_user_store(database_url) at startup."
+        )
     return _user_store
 
 
@@ -212,8 +220,9 @@ def seed_admin() -> None:
 
     If not set, seeding is skipped to avoid insecure defaults.
     """
-    store = get_user_store()
-    if store is None:
+    try:
+        store = get_user_store()
+    except RuntimeError:
         logger.warning("UserStore not initialized; skipping admin seed.")
         return
 

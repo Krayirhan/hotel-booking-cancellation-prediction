@@ -114,7 +114,9 @@ def main() -> int:
         f"[clean-artifacts] models_dir={models_dir} keep_runs={cfg.keep_runs} "
         f"max_age_days={cfg.max_age_days} latest_run_id={latest_run_id or '-'}"
     )
-    print(f"[clean-artifacts] total_runs={len(sorted_runs)} delete_candidates={len(to_delete)}")
+    print(
+        f"[clean-artifacts] total_runs={len(sorted_runs)} delete_candidates={len(to_delete)}"
+    )
 
     for run_dir in to_delete:
         st = run_dir.stat()

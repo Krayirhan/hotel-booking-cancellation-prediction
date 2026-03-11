@@ -14,7 +14,6 @@ Booking fields (hotel, lead_time, …) are also passed to the ML model.
 from __future__ import annotations
 
 import datetime
-import logging
 from enum import Enum
 from typing import Annotated, Any, Literal
 
@@ -27,8 +26,9 @@ from .guest_store import (
     GuestStoreUnavailableError,
 )
 from .metrics import GUEST_RISK_FALLBACK_TOTAL
+from .utils import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger("guests")
 
 router_guests = APIRouter(prefix="/guests", tags=["guests"])
 

@@ -179,6 +179,11 @@ jobs:
             -H "x-api-key: ${{ secrets.STAGING_API_KEY }}" \
             -d '{"records": []}')
           echo "Decide endpoint returned: $response"
+          if [ "$response" != "200" ] && [ "$response" != "422" ]; then
+            echo "\u274c v1/decide smoke test failed with status $response (expected 200 or 422)"
+            exit 1
+          fi
+          echo "\u2705 v1/decide smoke test passed"
 
   # ── 4. Approve for Production ─────────────────────────────────────────
   approve-production:

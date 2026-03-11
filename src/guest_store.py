@@ -82,15 +82,25 @@ class GuestStore:
             # ── Model features (used for risk prediction) ─────────────────────
             Column("hotel", String(50), nullable=False, server_default="City Hotel"),
             Column("lead_time", Integer(), nullable=False, server_default="0"),
-            Column("deposit_type", String(30), nullable=False, server_default="No Deposit"),
-            Column("market_segment", String(30), nullable=False, server_default="Online TA"),
+            Column(
+                "deposit_type", String(30), nullable=False, server_default="No Deposit"
+            ),
+            Column(
+                "market_segment", String(30), nullable=False, server_default="Online TA"
+            ),
             Column("adults", Integer(), nullable=False, server_default="2"),
             Column("children", Integer(), nullable=False, server_default="0"),
             Column("babies", Integer(), nullable=False, server_default="0"),
-            Column("stays_in_week_nights", Integer(), nullable=False, server_default="0"),
-            Column("stays_in_weekend_nights", Integer(), nullable=False, server_default="1"),
+            Column(
+                "stays_in_week_nights", Integer(), nullable=False, server_default="0"
+            ),
+            Column(
+                "stays_in_weekend_nights", Integer(), nullable=False, server_default="1"
+            ),
             Column("is_repeated_guest", Integer(), nullable=False, server_default="0"),
-            Column("previous_cancellations", Integer(), nullable=False, server_default="0"),
+            Column(
+                "previous_cancellations", Integer(), nullable=False, server_default="0"
+            ),
             Column("adr", Float(), nullable=True),
             # ── Prediction result ─────────────────────────────────────────────
             Column("risk_score", Float(), nullable=True),
@@ -257,5 +267,3 @@ def get_guest_store() -> GuestStore:
             "GuestStore is not initialized. Call init_guest_store() first."
         )
     return _guest_store
-
-
