@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ds-project-production
+  name: hotel-booking-cancellation-prediction-production
   namespace: argocd
   labels:
     environment: production
@@ -10,12 +10,12 @@ metadata:
     notifications.argoproj.io/subscribe.on-sync-failed.slack: ds-deployments
     notifications.argoproj.io/subscribe.on-health-degraded.pagerduty: ds-critical
 spec:
-  project: ds-project
+  project: hotel-booking-cancellation-prediction
 
   source:
-    repoURL: https://github.com/your-org/ds-project.git
+    repoURL: https://github.com/your-org/hotel-booking-cancellation-prediction.git
     targetRevision: main
-    path: deploy/helm/ds-project
+    path: deploy/helm/hotel-booking-cancellation-prediction
     helm:
       valueFiles:
         - values.yaml
@@ -23,7 +23,7 @@ spec:
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: ds-project
+    namespace: hotel-booking-cancellation-prediction
 
   syncPolicy:
     # Production requires manual sync (approve step)

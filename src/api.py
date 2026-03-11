@@ -83,7 +83,7 @@ def _load_serving_state() -> ServingState:
 
 
 app = FastAPI(
-    title="DS Project Serving API",
+    title="Hotel Booking Cancellation Prediction Serving API",
     version="1.2.0",
     description=(
         "Production inference API for hotel cancellation decisioning. "

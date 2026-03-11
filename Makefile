@@ -99,7 +99,7 @@ dvc-dag:
 
 # ── Helm ────────────────────────────────────────────────────────────
 helm-lint:
-	helm lint deploy/helm/ds-project
+	helm lint deploy/helm/hotel-booking-cancellation-prediction
 
 helm-template:
-	helm template ds-project deploy/helm/ds-project --values deploy/helm/ds-project/values.yaml
+	helm template hotel-booking-cancellation-prediction deploy/helm/hotel-booking-cancellation-prediction --values deploy/helm/hotel-booking-cancellation-prediction/values.yaml

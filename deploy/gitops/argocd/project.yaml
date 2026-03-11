@@ -1,16 +1,16 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: ds-project
+  name: hotel-booking-cancellation-prediction
   namespace: argocd
 spec:
-  description: DS Project ML inference platform
+  description: Hotel Booking Cancellation Prediction ML inference platform
   sourceRepos:
-    - "https://github.com/your-org/ds-project.git"
+    - "https://github.com/your-org/hotel-booking-cancellation-prediction.git"
   destinations:
-    - namespace: ds-project
+    - namespace: hotel-booking-cancellation-prediction
       server: https://kubernetes.default.svc
-    - namespace: ds-project-staging
+    - namespace: hotel-booking-cancellation-prediction-staging
       server: https://kubernetes.default.svc
   clusterResourceWhitelist:
     - group: ""

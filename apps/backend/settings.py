@@ -1,7 +1,7 @@
 """
 apps/backend/settings.py
 
-Runtime settings for the ds-project API server.
+Runtime settings for the hotel-booking-cancellation-prediction API server.
 All configuration is read from environment variables with sensible defaults.
 No extra dependencies — uses stdlib os.getenv only.
 
@@ -129,7 +129,7 @@ class ServerSettings:
     # ── OpenTelemetry ─────────────────────────────────────────────────────────
     otel_enabled: bool = field(default_factory=lambda: _env_bool("OTEL_ENABLED", False))
     otel_service_name: str = field(
-        default_factory=lambda: _env("OTEL_SERVICE_NAME", "ds-project-api")
+        default_factory=lambda: _env("OTEL_SERVICE_NAME", "hotel-booking-cancellation-prediction-api")
     )
     otel_exporter_otlp_endpoint: str = field(
         default_factory=lambda: _env(

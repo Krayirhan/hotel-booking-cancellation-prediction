@@ -1,24 +1,24 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ds-project-api
-  namespace: ds-project
+  name: hotel-booking-cancellation-prediction-api
+  namespace: hotel-booking-cancellation-prediction
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - ds-project.example.com
-      secretName: ds-project-api-tls
+        - hotel-booking-cancellation-prediction.example.com
+      secretName: hotel-booking-cancellation-prediction-api-tls
   rules:
-    - host: ds-project.example.com
+    - host: hotel-booking-cancellation-prediction.example.com
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: ds-project-api
+                name: hotel-booking-cancellation-prediction-api
                 port:
                   number: 80

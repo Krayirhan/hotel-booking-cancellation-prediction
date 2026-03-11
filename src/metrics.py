@@ -1,4 +1,4 @@
-"""metrics.py — Prometheus metric definitions for the DS Project API.
+"""metrics.py — Prometheus metric definitions for the Hotel Booking Cancellation Prediction API.
 
 All Prometheus counters, gauges, and histograms are defined here as module-level
 singletons.  Importing this module registers the collectors with the default

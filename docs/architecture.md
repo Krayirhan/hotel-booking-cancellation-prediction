@@ -22,7 +22,7 @@
 │                              Kubernetes Cluster                            │
 │                                                                             │
 │  ┌─────────────────────────────────────────────────────────────────┐        │
-│  │                    ds-project namespace                         │        │
+│  │                    hotel-booking-cancellation-prediction namespace                         │        │
 │  │                                                                 │        │
 │  │  ┌─────────────┐     ┌─────────────┐     ┌──────────────┐     │        │
 │  │  │  Ingress     │────▶│  Service    │────▶│  Deployment  │     │        │

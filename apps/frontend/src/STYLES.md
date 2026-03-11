@@ -2,7 +2,7 @@
 
 ## Overview
 
-The DS Project frontend uses a **two-file CSS architecture** for theming:
+The Hotel Booking Cancellation Prediction frontend uses a **two-file CSS architecture** for theming:
 
 | File | Purpose | Activation |
 |---|---|---|

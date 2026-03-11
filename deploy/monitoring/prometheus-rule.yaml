@@ -1,18 +1,18 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: ds-project-api-rules
-  namespace: ds-project
+  name: hotel-booking-cancellation-prediction-api-rules
+  namespace: hotel-booking-cancellation-prediction
 spec:
   groups:
-    - name: ds-project-api
+    - name: hotel-booking-cancellation-prediction-api
       rules:
         - alert: DSProjectHighP95Latency
           expr: histogram_quantile(0.95, sum(rate(ds_api_request_latency_seconds_bucket[5m])) by (le)) > 0.3
           for: 15m
           labels:
             severity: warning
-            service: ds-project-api
+            service: hotel-booking-cancellation-prediction-api
           annotations:
             summary: "DS API p95 latency breach"
             description: "p95 latency above 300ms for 15m"
@@ -22,7 +22,7 @@ spec:
           for: 10m
           labels:
             severity: critical
-            service: ds-project-api
+            service: hotel-booking-cancellation-prediction-api
           annotations:
             summary: "DS API 5xx rate breach"
             description: "5xx ratio above 0.1% for 10m"
@@ -49,7 +49,7 @@ spec:
           for: 10m
           labels:
             severity: critical
-            service: ds-project-api
+            service: hotel-booking-cancellation-prediction-api
           annotations:
             summary: "Correlated rollback signal (5xx + latency + model quality)"
             description: "Operational and model-quality signals are jointly breached. Trigger automated rollback workflow."
@@ -61,7 +61,7 @@ spec:
           for: 5m
           labels:
             severity: critical
-            service: ds-project-api
+            service: hotel-booking-cancellation-prediction-api
           annotations:
             summary: "Fast error-budget burn detected"
             description: "5xx ratio is burning monthly error budget >14.4x. Trigger rollback/canary halt."
@@ -71,7 +71,7 @@ spec:
           for: 30m
           labels:
             severity: warning
-            service: ds-project-api
+            service: hotel-booking-cancellation-prediction-api
           annotations:
             summary: "Slow error-budget burn detected"
             description: "5xx ratio is burning monthly error budget >6x. Freeze releases and investigate."
@@ -81,7 +81,7 @@ spec:
           for: 10m
           labels:
             severity: warning
-            service: ds-project-api
+            service: hotel-booking-cancellation-prediction-api
           annotations:
             summary: "Inference errors are elevated"
             description: "Inference error rate above threshold"
@@ -91,7 +91,7 @@ spec:
           for: 5m
           labels:
             severity: warning
-            service: ds-project-api
+            service: hotel-booking-cancellation-prediction-api
           annotations:
             summary: "Feature PSI drift detected: {{ $labels.feature }}"
             description: "PSI {{ $value | humanize }} > 0.2 for feature {{ $labels.feature }} — distribution shift likely"
@@ -101,7 +101,7 @@ spec:
           for: 10m
           labels:
             severity: critical
-            service: ds-project-api
+            service: hotel-booking-cancellation-prediction-api
           annotations:
             summary: "Model AUC degraded below SLO"
             description: "ROC-AUC {{ $value | humanize }} < 0.65 for model {{ $labels.model }} — consider retraining"
@@ -112,7 +112,7 @@ spec:
           for: 15m
           labels:
             severity: warning
-            service: ds-project-api
+            service: hotel-booking-cancellation-prediction-api
           annotations:
             summary: "Action rate anomaly detected"
             description: "Action rate {{ $value | humanize }} deviates >15pp from 7-day average — check model or data"

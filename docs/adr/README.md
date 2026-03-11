@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR)
 
-This directory contains Architecture Decision Records for the DS Project.
+This directory contains Architecture Decision Records for the Hotel Booking Cancellation Prediction.
 
 ## Index
 

@@ -1,4 +1,4 @@
-# ds_project — Üretim Seviyesi Veri Bilimi Pipeline'ı
+# hotel_booking_cancellation_prediction — Üretim Seviyesi Veri Bilimi Pipeline'ı
 
 Bu proje, otel rezervasyon iptal tahmini için uçtan uca bir veri bilimi ve MLOps hattı sunar. 
 Amaç; modeli **tekrarlanabilir**, **izlenebilir**, **güvenli** ve **üretime uygun** şekilde geliştirmek, yayınlamak ve işletmektir.
@@ -23,7 +23,7 @@ Amaç; modeli **tekrarlanabilir**, **izlenebilir**, **güvenli** ve **üretime u
 
 ## Proje Özeti
 
-`ds_project`, klasik modelleme adımlarını (ön işleme, eğitim, değerlendirme, tahmin) üretim ihtiyaçlarıyla birleştirir:
+`hotel_booking_cancellation_prediction`, klasik modelleme adımlarını (ön işleme, eğitim, değerlendirme, tahmin) üretim ihtiyaçlarıyla birleştirir:
 
 - politika tabanlı karar mekanizması,
 - kalibrasyon ve maliyet duyarlı değerlendirme,
@@ -119,8 +119,8 @@ Amaç; modeli **tekrarlanabilir**, **izlenebilir**, **güvenli** ve **üretime u
 ### Adım 1 — Klonla
 
 ```bash
-git clone https://github.com/KULLANICI_ADI/ds-project.git
-cd ds-project
+git clone https://github.com/KULLANICI_ADI/hotel-booking-cancellation-prediction.git
+cd hotel-booking-cancellation-prediction
 ```
 
 ### Adım 2 — Sistem hazır mı kontrol et
@@ -403,8 +403,8 @@ Test kapsamı:
 ### Docker
 
 ```bash
-docker build -t ds-project:latest .
-docker run -e DS_API_KEY=your-secret-key -p 8000:8000 ds-project:latest
+docker build -t hotel-booking-cancellation-prediction:latest .
+docker run -e DS_API_KEY=your-secret-key -p 8000:8000 hotel-booking-cancellation-prediction:latest
 ```
 
 ### Docker Compose (API + Frontend + Redis + PostgreSQL + Monitoring)

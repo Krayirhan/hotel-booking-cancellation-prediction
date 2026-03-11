@@ -1,33 +1,33 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ds-project-api
-  namespace: ds-project
+  name: hotel-booking-cancellation-prediction-api
+  namespace: hotel-booking-cancellation-prediction
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: ds-project-api
+      app: hotel-booking-cancellation-prediction-api
   template:
     metadata:
       labels:
-        app: ds-project-api
+        app: hotel-booking-cancellation-prediction-api
     spec:
       terminationGracePeriodSeconds: 40
       initContainers:
         - name: alembic-migrate
-          image: ghcr.io/your-org/ds-project:latest
+          image: ghcr.io/your-org/hotel-booking-cancellation-prediction:latest
           imagePullPolicy: IfNotPresent
           command: ["alembic", "upgrade", "head"]
           env:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: ds-project-secrets
+                  name: hotel-booking-cancellation-prediction-secrets
                   key: DATABASE_URL
       containers:
         - name: api
-          image: ghcr.io/your-org/ds-project:latest
+          image: ghcr.io/your-org/hotel-booking-cancellation-prediction:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
@@ -41,22 +41,22 @@ spec:
             - name: DS_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: ds-project-secrets
+                  name: hotel-booking-cancellation-prediction-secrets
                   key: DS_API_KEY
             - name: DS_ADMIN_KEY
               valueFrom:
                 secretKeyRef:
-                  name: ds-project-secrets
+                  name: hotel-booking-cancellation-prediction-secrets
                   key: DS_ADMIN_KEY
             - name: DASHBOARD_ADMIN_PASSWORD_ADMIN
               valueFrom:
                 secretKeyRef:
-                  name: ds-project-secrets
+                  name: hotel-booking-cancellation-prediction-secrets
                   key: DASHBOARD_ADMIN_PASSWORD_ADMIN
             - name: ALERT_WEBHOOK_URL
               valueFrom:
                 secretKeyRef:
-                  name: ds-project-secrets
+                  name: hotel-booking-cancellation-prediction-secrets
                   key: ALERT_WEBHOOK_URL
             - name: LOG_FORMAT
               value: "json"
@@ -65,22 +65,22 @@ spec:
             - name: REDIS_URL
               valueFrom:
                 secretKeyRef:
-                  name: ds-project-secrets
+                  name: hotel-booking-cancellation-prediction-secrets
                   key: REDIS_URL
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: ds-project-secrets
+                  name: hotel-booking-cancellation-prediction-secrets
                   key: DATABASE_URL
             - name: CORS_ALLOW_ORIGINS
               valueFrom:
                 secretKeyRef:
-                  name: ds-project-secrets
+                  name: hotel-booking-cancellation-prediction-secrets
                   key: CORS_ALLOW_ORIGINS
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               valueFrom:
                 secretKeyRef:
-                  name: ds-project-secrets
+                  name: hotel-booking-cancellation-prediction-secrets
                   key: OTEL_EXPORTER_OTLP_ENDPOINT
             - name: OTEL_EXPORTER_OTLP_INSECURE
               value: "false"
@@ -111,11 +111,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ds-project-api
-  namespace: ds-project
+  name: hotel-booking-cancellation-prediction-api
+  namespace: hotel-booking-cancellation-prediction
 spec:
   selector:
-    app: ds-project-api
+    app: hotel-booking-cancellation-prediction-api
   ports:
     - port: 80
       targetPort: 8000

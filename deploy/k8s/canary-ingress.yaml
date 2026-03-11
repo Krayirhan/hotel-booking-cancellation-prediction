@@ -1,21 +1,21 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ds-project-api-canary
-  namespace: ds-project
+  name: hotel-booking-cancellation-prediction-api-canary
+  namespace: hotel-booking-cancellation-prediction
   annotations:
     nginx.ingress.kubernetes.io/canary: "true"
     nginx.ingress.kubernetes.io/canary-weight: "10"
 spec:
   ingressClassName: nginx
   rules:
-    - host: ds-project.example.com
+    - host: hotel-booking-cancellation-prediction.example.com
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: ds-project-api-canary
+                name: hotel-booking-cancellation-prediction-api-canary
                 port:
                   number: 80

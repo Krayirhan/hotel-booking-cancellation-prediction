@@ -2,33 +2,33 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
-  name: ds-project
+  name: hotel-booking-cancellation-prediction
   namespace: flux-system
 spec:
   interval: 1m
-  url: https://github.com/your-org/ds-project.git
+  url: https://github.com/your-org/hotel-booking-cancellation-prediction.git
   ref:
     branch: main
   secretRef:
-    name: ds-project-git-auth
+    name: hotel-booking-cancellation-prediction-git-auth
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: ds-project-staging
-  namespace: ds-project-staging
+  name: hotel-booking-cancellation-prediction-staging
+  namespace: hotel-booking-cancellation-prediction-staging
 spec:
   interval: 5m
   chart:
     spec:
-      chart: deploy/helm/ds-project
+      chart: deploy/helm/hotel-booking-cancellation-prediction
       sourceRef:
         kind: GitRepository
-        name: ds-project
+        name: hotel-booking-cancellation-prediction
         namespace: flux-system
   valuesFiles:
-    - deploy/helm/ds-project/values.yaml
-    - deploy/helm/ds-project/values-staging.yaml
+    - deploy/helm/hotel-booking-cancellation-prediction/values.yaml
+    - deploy/helm/hotel-booking-cancellation-prediction/values-staging.yaml
   install:
     createNamespace: true
     remediation:
@@ -40,22 +40,22 @@ spec:
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: ds-project-production
-  namespace: ds-project
+  name: hotel-booking-cancellation-prediction-production
+  namespace: hotel-booking-cancellation-prediction
 spec:
   interval: 5m
   # Production: requires manual gate via suspend: true until approved
   suspend: true
   chart:
     spec:
-      chart: deploy/helm/ds-project
+      chart: deploy/helm/hotel-booking-cancellation-prediction
       sourceRef:
         kind: GitRepository
-        name: ds-project
+        name: hotel-booking-cancellation-prediction
         namespace: flux-system
   valuesFiles:
-    - deploy/helm/ds-project/values.yaml
-    - deploy/helm/ds-project/values-production.yaml
+    - deploy/helm/hotel-booking-cancellation-prediction/values.yaml
+    - deploy/helm/hotel-booking-cancellation-prediction/values-production.yaml
   install:
     createNamespace: true
     remediation:

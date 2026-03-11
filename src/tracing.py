@@ -9,7 +9,7 @@ Provides:
 
 Configuration via environment variables:
   OTEL_ENABLED=true
-  OTEL_SERVICE_NAME=ds-project-api
+  OTEL_SERVICE_NAME=hotel-booking-cancellation-prediction-api
   OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
   OTEL_TRACES_SAMPLER=parentbased_traceidalgo
   OTEL_TRACES_SAMPLER_ARG=0.1        (sample 10% in production)
@@ -44,7 +44,7 @@ def _otlp_insecure() -> bool:
     )
 
 
-def init_tracing(service_name: str = "ds-project-api") -> None:
+def init_tracing(service_name: str = "hotel-booking-cancellation-prediction-api") -> None:
     """Initialize OpenTelemetry tracing if OTEL_ENABLED=true."""
     global _tracer, _initialized
 

@@ -1,13 +1,13 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: ds-project-api
-  namespace: ds-project
+  name: hotel-booking-cancellation-prediction-api
+  namespace: hotel-booking-cancellation-prediction
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: ds-project-api
+    name: hotel-booking-cancellation-prediction-api
   minReplicas: 2
   maxReplicas: 10
   metrics:

@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# DS Project — Local Development Stack
+# Hotel Booking Cancellation Prediction — Local Development Stack
 # Usage:
 #   docker compose -f docker-compose.dev.yml up --build
 #   docker compose -f docker-compose.dev.yml down -v
@@ -11,7 +11,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ds-project-api
+    container_name: hotel-booking-cancellation-prediction-api
     # .env dosyası varsa oradan okur; sonra aşağıdaki environment değerleri override eder
     env_file:
       - path: .env
@@ -35,7 +35,7 @@ services:
       - DASHBOARD_TOKEN_TTL_MINUTES=${DASHBOARD_TOKEN_TTL_MINUTES:-480}
       - DASHBOARD_URL=${DASHBOARD_URL:-http://localhost:5173}
       - OTEL_ENABLED=${OTEL_ENABLED:-true}
-      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-ds-project-api}
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-hotel-booking-cancellation-prediction-api}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
       - OTEL_EXPORTER_OTLP_INSECURE=${OTEL_EXPORTER_OTLP_INSECURE:-true}
       - OTEL_DEPLOYMENT_ENV=${OTEL_DEPLOYMENT_ENV:-development}
@@ -67,7 +67,7 @@ services:
   # ---------- Frontend (React/Vite) ----------
   frontend:
     image: node:20-alpine
-    container_name: ds-project-frontend
+    container_name: hotel-booking-cancellation-prediction-frontend
     working_dir: /app
     ports:
       - "5173:5173"
@@ -88,7 +88,7 @@ services:
   # ---------- Redis (rate-limiter + caching) ----------
   redis:
     image: redis:7-alpine
-    container_name: ds-project-redis
+    container_name: hotel-booking-cancellation-prediction-redis
     ports:
       - "6379:6379"
     command: redis-server --save 60 1 --loglevel warning
@@ -105,7 +105,7 @@ services:
   # ---------- PostgreSQL (dashboard persistence + pgvector RAG) ----------
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: ds-project-postgres
+    container_name: hotel-booking-cancellation-prediction-postgres
     ports:
       - "5432:5432"
     environment:
@@ -125,7 +125,7 @@ services:
   # ---------- Prometheus ----------
   prometheus:
     image: prom/prometheus:v2.51.0
-    container_name: ds-project-prometheus
+    container_name: hotel-booking-cancellation-prediction-prometheus
     ports:
       - "9090:9090"
     volumes:
@@ -144,7 +144,7 @@ services:
   # ---------- Grafana ----------
   grafana:
     image: grafana/grafana:10.4.0
-    container_name: ds-project-grafana
+    container_name: hotel-booking-cancellation-prediction-grafana
     ports:
       - "3000:3000"
     environment:
@@ -153,7 +153,7 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - ./deploy/dev/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./deploy/monitoring/grafana-dashboard.json:/var/lib/grafana/dashboards/ds-project.json:ro
+      - ./deploy/monitoring/grafana-dashboard.json:/var/lib/grafana/dashboards/hotel-booking-cancellation-prediction.json:ro
       - grafana-data:/var/lib/grafana
     depends_on:
       - prometheus
@@ -164,7 +164,7 @@ services:
   # ---------- Jaeger (distributed tracing) ----------
   jaeger:
     image: jaegertracing/all-in-one:1.54
-    container_name: ds-project-jaeger
+    container_name: hotel-booking-cancellation-prediction-jaeger
     ports:
       - "16686:16686"   # Jaeger UI
       - "4317:4317"     # OTLP gRPC
@@ -177,7 +177,7 @@ services:
   # ---------- MinIO (S3-compatible object store for DVC remote) ----------
   minio:
     image: minio/minio:latest
-    container_name: ds-project-minio
+    container_name: hotel-booking-cancellation-prediction-minio
     ports:
       - "9000:9000"   # S3 API
       - "9001:9001"   # MinIO Console UI (http://localhost:9001)
@@ -199,7 +199,7 @@ services:
   # ---------- MLflow (experiment tracking UI) ----------
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.16.2
-    container_name: ds-project-mlflow
+    container_name: hotel-booking-cancellation-prediction-mlflow
     ports:
       - "5000:5000"   # MLflow UI  (http://localhost:5000)
     command: >

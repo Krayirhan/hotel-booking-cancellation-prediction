@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ds-project-staging
+  name: hotel-booking-cancellation-prediction-staging
   namespace: argocd
   labels:
     environment: staging
@@ -9,12 +9,12 @@ metadata:
     notifications.argoproj.io/subscribe.on-sync-succeeded.slack: ds-deployments
     notifications.argoproj.io/subscribe.on-sync-failed.slack: ds-deployments
 spec:
-  project: ds-project
+  project: hotel-booking-cancellation-prediction
 
   source:
-    repoURL: https://github.com/your-org/ds-project.git
+    repoURL: https://github.com/your-org/hotel-booking-cancellation-prediction.git
     targetRevision: main
-    path: deploy/helm/ds-project
+    path: deploy/helm/hotel-booking-cancellation-prediction
     helm:
       valueFiles:
         - values.yaml
@@ -22,7 +22,7 @@ spec:
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: ds-project-staging
+    namespace: hotel-booking-cancellation-prediction-staging
 
   syncPolicy:
     automated:

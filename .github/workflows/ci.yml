@@ -264,7 +264,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate Docker image build
-        run: docker build -t ds-project:${{ github.sha }} .
+        run: docker build -t hotel-booking-cancellation-prediction:${{ github.sha }} .
 
   dvc-e2e:
     runs-on: ubuntu-latest

@@ -3,12 +3,12 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: "ds-project-api"
+  - job_name: "hotel-booking-cancellation-prediction-api"
     metrics_path: /metrics
     static_configs:
       - targets: ["api:8000"]
         labels:
-          service: ds-project-api
+          service: hotel-booking-cancellation-prediction-api
           environment: development
 
   - job_name: "prometheus"

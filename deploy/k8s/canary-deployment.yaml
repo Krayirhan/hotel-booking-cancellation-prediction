@@ -1,23 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ds-project-api-canary
-  namespace: ds-project
+  name: hotel-booking-cancellation-prediction-api-canary
+  namespace: hotel-booking-cancellation-prediction
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ds-project-api
+      app: hotel-booking-cancellation-prediction-api
       track: canary
   template:
     metadata:
       labels:
-        app: ds-project-api
+        app: hotel-booking-cancellation-prediction-api
         track: canary
     spec:
       containers:
         - name: api
-          image: ghcr.io/your-org/ds-project:latest
+          image: ghcr.io/your-org/hotel-booking-cancellation-prediction:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
@@ -31,22 +31,22 @@ spec:
             - name: DS_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: ds-project-secrets
+                  name: hotel-booking-cancellation-prediction-secrets
                   key: DS_API_KEY
             - name: DS_ADMIN_KEY
               valueFrom:
                 secretKeyRef:
-                  name: ds-project-secrets
+                  name: hotel-booking-cancellation-prediction-secrets
                   key: DS_ADMIN_KEY
             - name: DASHBOARD_ADMIN_PASSWORD_ADMIN
               valueFrom:
                 secretKeyRef:
-                  name: ds-project-secrets
+                  name: hotel-booking-cancellation-prediction-secrets
                   key: DASHBOARD_ADMIN_PASSWORD_ADMIN
             - name: ALERT_WEBHOOK_URL
               valueFrom:
                 secretKeyRef:
-                  name: ds-project-secrets
+                  name: hotel-booking-cancellation-prediction-secrets
                   key: ALERT_WEBHOOK_URL
             - name: LOG_FORMAT
               value: "json"
@@ -55,7 +55,7 @@ spec:
             - name: REDIS_URL
               valueFrom:
                 secretKeyRef:
-                  name: ds-project-secrets
+                  name: hotel-booking-cancellation-prediction-secrets
                   key: REDIS_URL
           readinessProbe:
             httpGet:
@@ -67,11 +67,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ds-project-api-canary
-  namespace: ds-project
+  name: hotel-booking-cancellation-prediction-api-canary
+  namespace: hotel-booking-cancellation-prediction
 spec:
   selector:
-    app: ds-project-api
+    app: hotel-booking-cancellation-prediction-api
     track: canary
   ports:
     - port: 80

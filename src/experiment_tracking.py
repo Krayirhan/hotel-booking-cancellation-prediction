@@ -41,7 +41,7 @@ class ExperimentTracker:
 
     def __init__(
         self,
-        experiment_name: str = "ds_project",
+        experiment_name: str = "hotel_booking_cancellation_prediction",
         tracking_uri: Optional[str] = None,
     ):
         self._active = False

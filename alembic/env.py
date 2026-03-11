@@ -1,7 +1,7 @@
 """
 alembic/env.py
 
-Alembic migration environment for ds-project schema.
+Alembic migration environment for hotel-booking-cancellation-prediction schema.
 """
 
 from __future__ import annotations

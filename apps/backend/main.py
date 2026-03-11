@@ -1,7 +1,7 @@
 """
 apps/backend/main.py
 
-Production entrypoint for the ds-project API server.
+Production entrypoint for the hotel-booking-cancellation-prediction API server.
 
 Usage
 -----
@@ -40,7 +40,7 @@ def _parse_args() -> argparse.Namespace:
     from apps.backend.settings import settings  # noqa: PLC0415
 
     parser = argparse.ArgumentParser(
-        description="ds-project API server",
+        description="hotel-booking-cancellation-prediction API server",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -160,7 +160,7 @@ def run(
         workers = 1
 
     logger.info(
-        "Starting ds-project API | host=%s port=%d workers=%d "
+        "Starting hotel-booking-cancellation-prediction API | host=%s port=%d workers=%d "
         "log_level=%s graceful_shutdown=%ds reload=%s",
         host,
         port,

@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: ds-project-alertmanager-secrets
-  namespace: ds-project
+  name: hotel-booking-cancellation-prediction-alertmanager-secrets
+  namespace: hotel-booking-cancellation-prediction
   annotations:
-    ds-project.io/managed-by: external-secret
+    hotel-booking-cancellation-prediction.io/managed-by: external-secret
 type: Opaque
 stringData:
   # Do not commit real values. Inject at deploy time via ExternalSecret/SealedSecret.
@@ -14,8 +14,8 @@ stringData:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: ds-project-alertmanager-config
-  namespace: ds-project
+  name: hotel-booking-cancellation-prediction-alertmanager-config
+  namespace: hotel-booking-cancellation-prediction
 type: Opaque
 stringData:
   alertmanager.yaml: |
@@ -39,27 +39,27 @@ stringData:
     receivers:
       - name: default-receiver
         webhook_configs:
-          - url: "http://alert-router.ds-project.svc.cluster.local/default"
+          - url: "http://alert-router.hotel-booking-cancellation-prediction.svc.cluster.local/default"
 
       - name: slack-warnings
         slack_configs:
-          - api_url_file: /etc/alertmanager/secrets/ds-project-alertmanager-secrets/slack_webhook_url
+          - api_url_file: /etc/alertmanager/secrets/hotel-booking-cancellation-prediction-alertmanager-secrets/slack_webhook_url
             channel: "#ds-alerts"
-            title: "[DS Project] {{ .CommonAnnotations.summary }}"
+            title: "[Hotel Booking Cancellation Prediction] {{ .CommonAnnotations.summary }}"
             text: "{{ .CommonAnnotations.description }}"
 
       - name: pagerduty-critical
         pagerduty_configs:
-          - routing_key_file: /etc/alertmanager/secrets/ds-project-alertmanager-secrets/pagerduty_routing_key
+          - routing_key_file: /etc/alertmanager/secrets/hotel-booking-cancellation-prediction-alertmanager-secrets/pagerduty_routing_key
             description: "{{ .CommonAnnotations.summary }}"
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: Alertmanager
 metadata:
-  name: ds-project-alertmanager
-  namespace: ds-project
+  name: hotel-booking-cancellation-prediction-alertmanager
+  namespace: hotel-booking-cancellation-prediction
 spec:
   replicas: 1
-  configSecret: ds-project-alertmanager-config
+  configSecret: hotel-booking-cancellation-prediction-alertmanager-config
   secrets:
-    - ds-project-alertmanager-secrets
+    - hotel-booking-cancellation-prediction-alertmanager-secrets

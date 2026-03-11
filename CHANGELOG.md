@@ -41,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `src/features.py`: `FeatureEngineer.get_feature_names_out()` now returns proper `np.ndarray` from `_feature_names_out` (fixes sklearn `set_output` API compatibility)
 - `src/rate_limit.py`: Replaced pipeline-based counter with **atomic Lua script** (sliding window, no race condition)
-- `deploy/helm/ds-project/values.yaml`: `image.tag` changed from `latest` to `""` with mandatory override comment
+- `deploy/helm/hotel-booking-cancellation-prediction/values.yaml`: `image.tag` changed from `latest` to `""` with mandatory override comment
 
 ### Security
 - Dashboard auth: production guard prevents `DASHBOARD_ADMIN_*` env fallback in non-dev environments
@@ -55,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0] - 2026-02-18
 
 ### Added
-- **Helm Chart**: Parameterized Kubernetes deployment via Helm chart (`deploy/helm/ds-project/`)
+- **Helm Chart**: Parameterized Kubernetes deployment via Helm chart (`deploy/helm/hotel-booking-cancellation-prediction/`)
   - Environment-specific values: `values-staging.yaml`, `values-production.yaml`
   - Templates: Deployment, Service, Ingress, HPA, PDB, NetworkPolicy, Canary, PrometheusRule
 - **GitOps (ArgoCD + Flux)**: Declarative deployment sync (`deploy/gitops/`)
@@ -123,8 +123,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI pipeline (lint, type check, security, tests, coverage gate)
 - Basic data validation (schema checks, target label validation)
 
-[Unreleased]: https://github.com/your-org/ds-project/compare/v1.3.0...HEAD
-[1.3.0]: https://github.com/your-org/ds-project/compare/v1.2.0...v1.3.0
-[1.2.0]: https://github.com/your-org/ds-project/compare/v1.1.0...v1.2.0
-[1.1.0]: https://github.com/your-org/ds-project/compare/v1.0.0...v1.1.0
-[1.0.0]: https://github.com/your-org/ds-project/releases/tag/v1.0.0
+[Unreleased]: https://github.com/your-org/hotel-booking-cancellation-prediction/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/your-org/hotel-booking-cancellation-prediction/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/your-org/hotel-booking-cancellation-prediction/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/your-org/hotel-booking-cancellation-prediction/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/your-org/hotel-booking-cancellation-prediction/releases/tag/v1.0.0

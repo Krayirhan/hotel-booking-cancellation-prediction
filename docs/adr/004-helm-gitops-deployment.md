@@ -14,11 +14,11 @@ configurations became error-prone:
 
 ## Decision
 
-### Helm Chart (`deploy/helm/ds-project/`)
+### Helm Chart (`deploy/helm/hotel-booking-cancellation-prediction/`)
 Parameterize all Kubernetes resources via Helm templates:
 
 ```
-deploy/helm/ds-project/
+deploy/helm/hotel-booking-cancellation-prediction/
 ├── Chart.yaml
 ├── values.yaml           # defaults
 ├── values-staging.yaml   # staging overrides

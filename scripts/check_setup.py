@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-DS-Project — Tam Sistem Hazırlık Kontrolü
+Hotel Booking Cancellation Prediction — Tam Sistem Hazırlık Kontrolü
 ==========================================
 GitHub'dan klonladıktan sonra, Docker ile açmadan ÖNCE çalıştırın.
 Eksik olan her şeyi tek tek listeler ve nasıl düzeleceğini söyler.
@@ -133,7 +133,7 @@ def _runtime_policy() -> tuple[tuple[int, int], str]:
     except Exception:
         return DEFAULT_REQUIRED_PYTHON_SERIES, DEFAULT_BOOTSTRAP_PYTHON
 
-    runtime = payload.get("tool", {}).get("ds_project", {}).get("runtime", {})
+    runtime = payload.get("tool", {}).get("hotel_booking_cancellation_prediction", {}).get("runtime", {})
     required_minor = str(
         runtime.get(
             "required_python_minor",
@@ -950,7 +950,7 @@ def summary() -> int:
 
 def main() -> None:
     if not JSON_OUT:
-        print(_c(_BOLD, "\n  DS-Project — Tam Sistem Hazirlik Kontrolu"))
+        print(_c(_BOLD, "\n  Hotel Booking Cancellation Prediction — Tam Sistem Hazirlik Kontrolu"))
         print(f"  Proje koku : {ROOT}")
         print(f"  Sistem     : {sys.platform}  |  Python {sys.version.split()[0]}")
         if FIX:

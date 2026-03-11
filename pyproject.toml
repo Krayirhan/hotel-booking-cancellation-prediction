@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ds-project"
+name = "hotel-booking-cancellation-prediction"
 version = "1.2.0"
 description = "Hotel booking cancellation prediction"
 requires-python = ">=3.12,<3.13"
@@ -18,7 +18,7 @@ dependencies = { file = ["requirements-prod.txt"] }
 [tool.setuptools.packages.find]
 include = ["src", "src.*"]
 
-[tool.ds_project.runtime]
+[tool.hotel_booking_cancellation_prediction.runtime]
 required_python_minor = "3.12"
 bootstrap_python = "3.12.9"
 

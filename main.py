@@ -43,7 +43,7 @@ from src.utils import set_seed
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="DS Project CLI")
+    p = argparse.ArgumentParser(description="Hotel Booking Cancellation Prediction CLI")
     sub = p.add_subparsers(dest="command", required=True)
 
     sub.add_parser("preprocess")

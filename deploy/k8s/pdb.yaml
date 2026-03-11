@@ -1,10 +1,10 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: ds-project-api-pdb
-  namespace: ds-project
+  name: hotel-booking-cancellation-prediction-api-pdb
+  namespace: hotel-booking-cancellation-prediction
 spec:
   minAvailable: 1
   selector:
     matchLabels:
-      app: ds-project-api
+      app: hotel-booking-cancellation-prediction-api

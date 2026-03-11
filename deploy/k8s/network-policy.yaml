@@ -1,12 +1,12 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: ds-project-api-restrict
-  namespace: ds-project
+  name: hotel-booking-cancellation-prediction-api-restrict
+  namespace: hotel-booking-cancellation-prediction
 spec:
   podSelector:
     matchLabels:
-      app: ds-project-api
+      app: hotel-booking-cancellation-prediction-api
   policyTypes:
     - Ingress
     - Egress

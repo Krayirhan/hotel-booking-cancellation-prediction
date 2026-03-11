@@ -133,7 +133,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     2. Close Ollama async connection pool
     3. Set ``app.state.shutting_down = True``
     """
-    init_tracing(service_name="ds-project-api")
+    init_tracing(service_name="hotel-booking-cancellation-prediction-api")
     instrument_fastapi(app)
     _validate_admin_key_startup()
 

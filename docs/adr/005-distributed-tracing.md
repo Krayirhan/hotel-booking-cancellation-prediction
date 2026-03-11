@@ -34,7 +34,7 @@ FastAPI Request
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `OTEL_ENABLED` | `false` | Master switch |
-| `OTEL_SERVICE_NAME` | `ds-project-api` | Service identifier |
+| `OTEL_SERVICE_NAME` | `hotel-booking-cancellation-prediction-api` | Service identifier |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | Collector endpoint |
 | `OTEL_DEPLOYMENT_ENV` | `production` | Environment tag |
 

@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# DS Project — Production Stack
+# Hotel Booking Cancellation Prediction — Production Stack
 #
 # Differences from docker-compose.dev.yml:
 #   ✓ read_only containers (filesystem immutable except tmpfs mounts)
@@ -25,8 +25,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ds-project-api:${IMAGE_TAG:-latest}
-    container_name: ds-project-api-prod
+    image: hotel-booking-cancellation-prediction-api:${IMAGE_TAG:-latest}
+    container_name: hotel-booking-cancellation-prediction-api-prod
     restart: always
     read_only: true
     tmpfs:
@@ -54,7 +54,7 @@ services:
       - DASHBOARD_CACHE_TTL_SECONDS=${DASHBOARD_CACHE_TTL_SECONDS:-45}
       # Tracing — point to external Jaeger/Tempo in prod
       - OTEL_ENABLED=${OTEL_ENABLED:-true}
-      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-ds-project-api}
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-hotel-booking-cancellation-prediction-api}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
       - OTEL_EXPORTER_OTLP_INSECURE=${OTEL_EXPORTER_OTLP_INSECURE:-false}
       - OTEL_DEPLOYMENT_ENV=production
@@ -94,8 +94,8 @@ services:
     build:
       context: apps/frontend
       dockerfile: Dockerfile.prod
-    image: ds-project-frontend:${IMAGE_TAG:-latest}
-    container_name: ds-project-frontend-prod
+    image: hotel-booking-cancellation-prediction-frontend:${IMAGE_TAG:-latest}
+    container_name: hotel-booking-cancellation-prediction-frontend-prod
     restart: always
     read_only: true
     tmpfs:
@@ -120,7 +120,7 @@ services:
   # ---------- Redis (production, no persistent save config for simplicity) ----------
   redis:
     image: redis:7-alpine
-    container_name: ds-project-redis-prod
+    container_name: hotel-booking-cancellation-prediction-redis-prod
     restart: always
     read_only: true
     tmpfs:
@@ -148,7 +148,7 @@ services:
   # ---------- Prometheus (production scrape target: api only) ----------
   prometheus:
     image: prom/prometheus:v2.51.0
-    container_name: ds-project-prometheus-prod
+    container_name: hotel-booking-cancellation-prediction-prometheus-prod
     restart: always
     read_only: true
     tmpfs:
@@ -178,7 +178,7 @@ services:
   # ---------- Grafana (production) ----------
   grafana:
     image: grafana/grafana:10.4.0
-    container_name: ds-project-grafana-prod
+    container_name: hotel-booking-cancellation-prediction-grafana-prod
     restart: always
     ports:
       - "${GRAFANA_PORT:-3000}:3000"
@@ -191,7 +191,7 @@ services:
       - GF_ANALYTICS_REPORTING_ENABLED=false
     volumes:
       - ./deploy/dev/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./deploy/monitoring/grafana-dashboard.json:/var/lib/grafana/dashboards/ds-project.json:ro
+      - ./deploy/monitoring/grafana-dashboard.json:/var/lib/grafana/dashboards/hotel-booking-cancellation-prediction.json:ro
       - grafana-prod-data:/var/lib/grafana
     depends_on:
       - prometheus

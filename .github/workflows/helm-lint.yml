@@ -19,28 +19,28 @@ jobs:
 
       - name: Helm lint (base values)
         run: |
-          helm lint deploy/helm/ds-project \
-            --values deploy/helm/ds-project/values.yaml
+          helm lint deploy/helm/hotel-booking-cancellation-prediction \
+            --values deploy/helm/hotel-booking-cancellation-prediction/values.yaml
 
       - name: Helm lint (staging values)
         run: |
-          helm lint deploy/helm/ds-project \
-            --values deploy/helm/ds-project/values.yaml \
-            --values deploy/helm/ds-project/values-staging.yaml
+          helm lint deploy/helm/hotel-booking-cancellation-prediction \
+            --values deploy/helm/hotel-booking-cancellation-prediction/values.yaml \
+            --values deploy/helm/hotel-booking-cancellation-prediction/values-staging.yaml
 
       - name: Helm lint (production values)
         run: |
-          helm lint deploy/helm/ds-project \
-            --values deploy/helm/ds-project/values.yaml \
-            --values deploy/helm/ds-project/values-production.yaml
+          helm lint deploy/helm/hotel-booking-cancellation-prediction \
+            --values deploy/helm/hotel-booking-cancellation-prediction/values.yaml \
+            --values deploy/helm/hotel-booking-cancellation-prediction/values-production.yaml
 
       - name: Helm template validate
         run: |
-          helm template ds-project deploy/helm/ds-project \
-            --values deploy/helm/ds-project/values.yaml > /dev/null
-          helm template ds-project-staging deploy/helm/ds-project \
-            --values deploy/helm/ds-project/values.yaml \
-            --values deploy/helm/ds-project/values-staging.yaml > /dev/null
-          helm template ds-project-prod deploy/helm/ds-project \
-            --values deploy/helm/ds-project/values.yaml \
-            --values deploy/helm/ds-project/values-production.yaml > /dev/null
+          helm template hotel-booking-cancellation-prediction deploy/helm/hotel-booking-cancellation-prediction \
+            --values deploy/helm/hotel-booking-cancellation-prediction/values.yaml > /dev/null
+          helm template hotel-booking-cancellation-prediction-staging deploy/helm/hotel-booking-cancellation-prediction \
+            --values deploy/helm/hotel-booking-cancellation-prediction/values.yaml \
+            --values deploy/helm/hotel-booking-cancellation-prediction/values-staging.yaml > /dev/null
+          helm template hotel-booking-cancellation-prediction-prod deploy/helm/hotel-booking-cancellation-prediction \
+            --values deploy/helm/hotel-booking-cancellation-prediction/values.yaml \
+            --values deploy/helm/hotel-booking-cancellation-prediction/values-production.yaml > /dev/null
